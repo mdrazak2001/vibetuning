@@ -1,0 +1,73 @@
+{
+  "name": "sft_whisper_expresso_small",
+  "status": "probe_done_awaiting_full_run_go",
+  "recipe": "recipes/sft_whisper",
+  "base_model": "openai/whisper-small",
+  "method": "lora_sft",
+  "peft": {
+    "r": 8,
+    "lora_alpha": 16,
+    "lora_dropout": 0.05,
+    "target_modules": ["q_proj", "v_proj"]
+  },
+  "fp16": true,
+  "dataset": {
+    "id": "ylacombe/expresso",
+    "subset": "read style==whisper",
+    "license": "CC-BY-NC-4.0",
+    "hours": 0.993,
+    "train_clips": 1025,
+    "val_clips": 114,
+    "manifest_train": "data/expresso_whisper/manifest_train.jsonl",
+    "manifest_val": "data/expresso_whisper/manifest_val.jsonl"
+  },
+  "train": {
+    "epochs": 3,
+    "epochs_range": [2, 4],
+    "per_device_train_batch_size": 8,
+    "learning_rate": 1e-4,
+    "warmup_steps": 20,
+    "approx_steps": 385,
+    "early_stop": {
+      "metric": "eval_wer",
+      "greater_is_better": false,
+      "patience_epochs": 1,
+      "load_best_model_at_end": true
+    },
+    "save_steps": 200,
+    "predict_with_generate_on_val": true
+  },
+  "eval": {
+    "metric": "jiwer_wer",
+    "normalize": "transformers.models.whisper.english_normalizer.BasicTextNormalizer",
+    "normalize_refs_and_hyps": true,
+    "splits": [
+      {"id": "expresso_val", "path": "data/expresso_whisper/manifest_val.jsonl"},
+      {"id": "eval_whisper", "path": "eval_whisper/", "formats": ["m4a", "mp3", "wav", "flac", "ogg", "aac"]},
+      {"id": "eval_normal", "path": "eval_normal/", "purpose": "catastrophic_forgetting"}
+    ],
+    "report": "base_vs_tuned"
+  },
+  "gpu": {
+    "type": "L4",
+    "spot": false,
+    "region": "IN2",
+    "reuse_machine_id": 580479,
+    "launch_from": "vibetuner"
+  },
+  "caps": {
+    "inr": 150,
+    "wall_clock_min": 45,
+    "pause_on_every_exit": true
+  },
+  "probe": {
+    "run_id": "r_2ebaedf6",
+    "steps": 50,
+    "eval_clips": 8,
+    "sec_to_first_step_in_process": 35.299,
+    "sec_per_train_step": 0.3734,
+    "sec_per_eval_clip": 0.1845,
+    "metrics": "logs/m3/metrics.json"
+  },
+  "estimate_inr_range": [7.4, 12.4]
+}

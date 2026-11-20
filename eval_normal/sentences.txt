@@ -1,0 +1,2 @@
+# Normal-voice TEST transcripts (forgetting check). Drop matching audio here.
+# Format: filename<TAB>the sentence you read in a normal voice

@@ -7,21 +7,20 @@ Drop your whispered recordings here. Train/val come from Expresso; this folder i
 ```
 eval_whisper/
   sentences.txt
-  clip_001.wav
+  clip_001.m4a
   clip_002.wav
   ...
 ```
 
+Any of **m4a / mp3 / wav / flac / ogg / aac** is fine. `recipes/sft_whisper/eval_loader.py` converts to 16 kHz mono (ffmpeg first, then soundfile, then librosa).
+
 `sentences.txt` (UTF-8), one clip per line. `#` comments and blank lines are ignored.
 
 ```
-# filename<TAB>transcript
-clip_001.wav	the sentence you actually whispered
+clip_001.m4a	the sentence you actually whispered
 clip_002.wav	another quiet line
 ```
 
 Also accepted: `filename|transcript`, `filename transcript`, or transcript-only lines aligned to audio sorted by filename.
 
-Audio: wav / flac / mp3 / ogg / m4a. Prefer 16 kHz mono, but the trainer resamples.
-
-Loaded by `recipes/sft_whisper/eval_loader.py` (`EVAL_WHISPER_DIR` overrides the path).
+Override path with `EVAL_WHISPER_DIR`. Normal-voice (forgetting) clips go in `eval_normal/` with the same layout.

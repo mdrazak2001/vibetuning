@@ -87,17 +87,13 @@ def write_metrics(payload: dict) -> None:
 
 
 def _dataset_from_eval(items: list) -> list:
-    """Load eval_whisper clips in-process. Do not datasets.map after CUDA."""
-    import numpy as np
-    import soundfile as sf
+    """Load eval_whisper clips in-process (any format → 16 kHz mono). Do not datasets.map after CUDA."""
+    from eval_loader import load_audio_16k_mono
 
     rows = []
     for item in items:
-        y, sr = sf.read(item["audio_path"], dtype="float32", always_2d=False)
-        y = np.asarray(y, dtype=np.float32)
-        if y.ndim > 1:
-            y = y.mean(axis=1)
-        rows.append({"audio": {"array": y, "sampling_rate": int(sr)}, "text": item["text"]})
+        audio = load_audio_16k_mono(item["audio_path"])
+        rows.append({"audio": audio, "text": item["text"]})
     return rows
 
 

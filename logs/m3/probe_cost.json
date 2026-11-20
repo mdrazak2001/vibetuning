@@ -1,0 +1,31 @@
+{
+  "job": "m3-probe-whisper-small-lora",
+  "gpu": "L4",
+  "spot": false,
+  "region": "IN2",
+  "machine_id": 580479,
+  "run_id": "r_2ebaedf6",
+  "live_l4_inr_per_hr": 41.31,
+  "cap_inr": 30.0,
+  "timeout_sec": 1200,
+  "timeout_ceiling_inr": 13.77,
+  "grants_before": 49423.17,
+  "grants_after": 49420.93,
+  "actual_inr": 2.24,
+  "elapsed_sec": 197.7,
+  "timed_out": false,
+  "run_exit_code": null,
+  "running_after": [],
+  "start": {
+    "run_id": "r_2ebaedf6",
+    "machine_id": 580479,
+    "launcher_pid": 566,
+    "remote_log": "/home/jl-runs/r_2ebaedf6/output.log",
+    "remote_exit_code": "/home/jl-runs/r_2ebaedf6/exit_code",
+    "target_kind": "file",
+    "remote_target": "/home/probe.py",
+    "command": "command -v uv >/dev/null 2>&1 || { curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1; } && export PATH=\"$HOME/.local/bin:$PATH\" && (test -d \"$HOME/.venv\" || uv venv --system-site-packages --seed \"$HOME/.venv\") && . \"$HOME/.venv/bin/activate\" && echo \"[jl] No dependency file detected, using template packages\" && tar -xzf /home/m3_probe_data.tgz -C /home && apt-get update -qq && apt-get install -y -qq ffmpeg libsndfile1 || true && python3 probe.py",
+    "instance_origin": "existing",
+    "lifecycle_policy": "none"
+  }
+}

@@ -55,10 +55,22 @@ HF datasets-server: dataset does not exist or is not accessible without auth. co
 
 - **CC BY-NC 4.0**: fine for this hackathon / research demo; not for a commercial product without a separate license from the Expresso authors.
 - Read-speech whisper, studio 48 kHz originally. This subset has **3 speakers** (ex01–ex03); Expresso overall has 4. Domain gap vs phone-mic / true ASMR is expected — that is why TEST is user-recorded whisper.
-- Advertised read-whisper time on the upstream card is 79 min; measured 16 kHz clip sum here is **0.993 h (~59.6 min)**. Same 1,139 `style=whisper` rows as the HF viewer. We did not pad with asmr pseudo-labels to chase the 1–3 h band.
+- Advertised read-whisper time on the upstream card is 79 min; measured 16 kHz clip sum here is **0.993 h (~59.6 min)**. See **Hours gap** below.
 - Emphasis markers (`*word*`) stripped from text.
 - Empty / non-alphabetic / placeholder transcripts dropped.
 - Do not mix asmr pseudo-labels into train without relabeling.
+
+## Hours gap: 79 min upstream vs 59.6 min here
+
+The Expresso card / paper lists **79 min of read whisper** (plus 86 min improvised, which we never used — no transcripts in the `read` config).
+
+This forge kept **every** `style==whisper` row in `ylacombe/expresso` `read` (1,139 clips, `dropped: {}`). The missing ~19.4 min is not a filter bug.
+
+Most likely cause: **ex04 has no whisper rows in this mirror.** HF viewer frequencies for `read` are ex01 2902 / ex02 2905 / ex03 2905 / ex04 1936, but whisper-style ids are only ex01–ex03 (379 / 380 / 380). 59.6 / 79 ≈ **0.75** — three of four speakers. Either ex04 never recorded read-whisper, or those files did not land in `ylacombe/expresso`.
+
+Secondary: the paper’s minutes are studio session time (pauses, slates) rather than the sum of exported utterance durations. Segmented clips here average 3.14 s; 1,139 × 3.14 s = 59.6 min exactly.
+
+Improvised whisper (86 min, stereo dialogues) is a separate, intentional omission: the `read` config does not ship matching human transcripts.
 
 ## How it was built
 

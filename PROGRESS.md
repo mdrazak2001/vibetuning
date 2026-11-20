@@ -111,3 +111,19 @@ Spot-check (decode + 16 kHz/mono + RMS; transcripts from the source card):
 3. `ex03_whisper_00282` 3.20 s — *You can expect a high of sixty and a low of forty seven.*
 
 Wavs in `data/samples/`. Full audio stays on vibetuner (`data/expresso_whisper/audio/`, gitignored).
+
+## M3 — probe (done 2026-11-19, GO for probe only)
+
+On-demand L4 `580479` (`vibetuning-m3-probe`), from vibetuner. 50 steps whisper-small LoRA + 8-clip generate eval. **Full run not started.**
+
+| Probe metric | Value |
+| --- | --- |
+| Time-to-first-step (in-process) | 35.3 s |
+| sec/train-step (steady) | 0.373 s |
+| sec/eval-clip | 0.185 s |
+| Probe val WER (normalized, 8 clips) | 0.053 |
+| Live L4 | ₹41.31 / hr |
+| M3 GPU spend | **₹5.26** (includes one failed folder-venv clash); successful slice ₹2.24 |
+| Running after pause | **0** |
+
+Full-run proposal (waiting on GO): 3 epochs, ~385 steps, early stop on val WER, eval base vs tuned on Expresso val + `eval_whisper/` + `eval_normal/`. Estimated **₹7.4–₹12.4** (M1 1.84× calibration, ±25%), well under ₹150 / 45 min. Card: `logs/m3/plan.md`. Spec: `run_spec.json`.

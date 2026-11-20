@@ -1,0 +1,45 @@
+{
+  "phase": "m3-probe",
+  "full_run_executed": false,
+  "gpu": "L4",
+  "spot": false,
+  "region": "IN2",
+  "live_l4_inr_per_hr": 41.31,
+  "fx_usd_inr": 93.29,
+  "probe": {
+    "run_id": "r_2ebaedf6",
+    "machine_id": 580479,
+    "sec_to_first_step_in_process": 35.299,
+    "sec_per_train_step_steady": 0.3734,
+    "sec_per_eval_clip": 0.1845,
+    "probe_wall_sec": 197.7,
+    "fixed_wall_beyond_script_sec": 135,
+    "wer_probe_val_normalized": 0.0526,
+    "successful_slice_inr": 2.24,
+    "all_m3_gpu_inr": 5.26,
+    "grants_session_start": 49426.19,
+    "grants_after_probe": 49420.93
+  },
+  "m1_calibration": {
+    "predicted_inr": 8.26,
+    "actual_inr": 15.2,
+    "multiplier": 1.84
+  },
+  "full_run_estimate": {
+    "epochs": 3,
+    "steps": 385,
+    "batch_size": 8,
+    "fixed_overhead_sec": 180,
+    "train_sec": 144,
+    "epoch_eval_sec": 63,
+    "final_eval_sec": 82,
+    "raw_total_sec": 469,
+    "raw_inr": 5.4,
+    "calibrated_inr": 9.9,
+    "range_inr": [7.4, 12.4],
+    "range_minutes": [8, 15],
+    "caps_inr": 150,
+    "caps_minutes": 45,
+    "formula": "fixed_overhead + steps*sec_step + epoch_evals*n_val*sec_eval + 2*(n_val+n_heldout)*sec_eval_heldout; rupee range = calibrated*1.84 then ±25%"
+  }
+}
