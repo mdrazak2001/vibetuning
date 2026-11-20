@@ -137,7 +137,8 @@ button.primary { background: #1c1915 !important; color: #f4efe6 !important; }
 #receipt { background: #fffdf8; border: 1px solid #d9cfc0; padding: 12px 16px; }
 """
 
-with gr.Blocks(title="vibetuning — personal training agent", css=CSS, theme=gr.themes.Soft(primary_hue="stone", font=["IBM Plex Sans", "sans-serif"])) as demo:
+THEME = gr.themes.Soft(primary_hue="stone", font=["IBM Plex Sans", "sans-serif"])
+with gr.Blocks(title="vibetuning — personal training agent") as demo:
     gr.Markdown(
         "# vibetuning\n"
         "A personal agent that shops for **datasets + GPU compute**, buys a LoRA, and leaves "
@@ -192,4 +193,10 @@ with gr.Blocks(title="vibetuning — personal training agent", css=CSS, theme=gr
 if __name__ == "__main__":
     host = os.getenv("GRADIO_HOST", "0.0.0.0")
     port = int(os.getenv("GRADIO_PORT", "7860"))
-    demo.launch(server_name=host, server_port=port, share=bool(os.getenv("GRADIO_SHARE")))
+    demo.launch(
+        server_name=host,
+        server_port=port,
+        share=bool(os.getenv("GRADIO_SHARE")),
+        css=CSS,
+        theme=THEME,
+    )
