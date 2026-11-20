@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+.venv/
+venv/
+*.pyc
+.DS_Store
+adapters/
+outputs/
+checkpoints/
+runs/
+*.pt
+*.bin
+*.safetensors
+.vibetuning/
