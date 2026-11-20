@@ -613,6 +613,35 @@ def api_live():
             "dispatch_enabled": os.getenv("LIVE_DISPATCH") == "1"}
 
 
+def _job_summary(blob: dict) -> dict:
+    st, pts = blob.get("state", {}), blob.get("points", [])
+    evals = [p["wer"] for p in pts if p.get("kind") == "eval" and p.get("wer") is not None]
+    base = next((p["wer"] for p in pts if p.get("kind") == "wer" and str(p.get("split", "")).startswith("base/")), None)
+    return {"id": st.get("id"), "state": st.get("state"), "phase": st.get("phase"), "started": st.get("started"),
+            "finished": st.get("finished"), "elapsed": st.get("elapsed"), "est_inr": st.get("est_inr"),
+            "best_wer": min(evals) if evals else None, "base_wer": base, "epochs": len(evals),
+            "n_points": len(pts), "store": store().backend, "machine_id": st.get("machine_id")}
+
+
+@app.get("/api/jobs")
+def api_jobs():
+    jobs = []
+    for f in sorted((LIVE_DIR / "jobs").glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        try:
+            jobs.append(_job_summary(json.loads(f.read_text())))
+        except Exception:
+            continue
+    return {"jobs": jobs}
+
+
+@app.get("/api/jobs/{job_id}")
+def api_job(job_id: str):
+    f = LIVE_DIR / "jobs" / f"{Path(job_id).name}.json"
+    if not f.exists():
+        return JSONResponse({"error": "unknown job"}, status_code=404)
+    return json.loads(f.read_text())
+
+
 @app.post("/api/live/dispatch")
 def api_live_dispatch():
     if os.getenv("LIVE_DISPATCH") != "1":

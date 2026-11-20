@@ -106,9 +106,31 @@ The flow moves through phases: hero → research → stack → quote → receipt
 - `/api/spend`, `/api/status`, `/api/audit` and `/api/memory` feed the drawers. `/api/transcribe` feeds the whisper A/B (CPU torch needed).
 - No secrets leave the server.
 
-### Live training
+### Architecture
 
-![live training](docs/screenshots/mission-live-training.png)
+```mermaid
+flowchart LR
+  U[Goal in plain English] --> MC[tuno mission control<br/>FastAPI + SSE on Boat]
+  MC --> CG[Cognee<br/>cross-context memory]
+  MC --> CD[context.dev<br/>dataset search]
+  MC --> SL[Superlinked SIE<br/>rerank]
+  SL --> LG[License gate]
+  LG --> IN[Ingest<br/>Airbyte path / pandas fallback]
+  IN --> JQ[JarvisLabs live price<br/>+ Cognee 1.84x lesson]
+  JQ --> Q[Quote → Approve]
+  Q --> D[Dispatch job]
+  D --> R[Relay on Boat<br/>scripts/live_run.py]
+  R -->|warm resume · jl run| GPU[JarvisLabs L4<br/>LoRA SFT]
+  GPU -->|jl run logs / 15s| R
+  R --> ST[(Audit store<br/>SingleStore or SQLite)]
+  R --> AM[Amplitude]
+  R --> JB[Jobs view · loss + WER]
+  R -->|finally| P[GPU paused]
+```
+
+### Live training (Jobs)
+
+![jobs](docs/screenshots/mission-jobs.png)
 
 `POST /api/live/dispatch` (needs `LIVE_DISPATCH=1`) launches `scripts/live_run.py` on the Boat control plane. It refuses to dispatch while another run is in flight.
 - It warm-resumes the paused L4 and never creates a GPU. Hard caps are 20 min and ₹40, and the GPU is paused in `finally`.

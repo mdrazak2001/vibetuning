@@ -56,6 +56,9 @@ def write_state(**kw) -> dict:
     cur = json.loads(STATE.read_text()) if STATE.exists() else {}
     cur.update(kw, updated=m.now_iso())
     m.write_json(STATE, cur)
+    if cur.get("id"):
+        points = [json.loads(l) for l in POINTS.read_text().splitlines() if l.strip()] if POINTS.exists() else []
+        m.write_json(LIVE_DIR / "jobs" / f"{cur['id']}.json", {"state": cur, "points": points})
     return cur
 
 

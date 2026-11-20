@@ -10,6 +10,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563EB'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23fff'/%3E%3C/svg%3E" />
 <script>
   try { const t = localStorage.getItem('vt-theme'); if (t) document.documentElement.dataset.theme = t; } catch {}
+  try { if (localStorage.getItem('tuno-rail') === 'collapsed') document.documentElement.classList.add('rail-collapsed'); } catch {}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
@@ -26,7 +27,8 @@ tailwind.config = { theme: { extend: {
   --accent:37 99 235;--onaccent:255 255 255;--ok:22 163 74;--warn:217 119 6;--bad:220 38 38;--dot:16 17 20;--dot-a:.06}
 [data-theme=dark]{--bg:11 12 14;--panel:20 22 26;--ink:232 234 237;--mute:138 144 153;--line:38 42 49;--soft:27 30 35;
   --accent:255 178 36;--onaccent:11 12 14;--ok:52 211 153;--warn:251 191 36;--bad:248 113 113;--dot:232 234 237;--dot-a:.05}
-:root{--e:cubic-bezier(0.22,1,0.36,1);--t1:150ms;--t2:250ms;--t3:400ms}
+:root{--e:cubic-bezier(0.22,1,0.36,1);--t1:150ms;--t2:250ms;--t3:400ms;--rail:200px}
+html.rail-collapsed{--rail:56px}
 html,body{background:rgb(var(--bg));color:rgb(var(--ink))}
 body{font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;
   background-image:radial-gradient(rgb(var(--dot) / var(--dot-a)) 1px,transparent 1.2px);background-size:24px 24px;background-attachment:fixed}
@@ -83,9 +85,17 @@ body{font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;
   background-image:radial-gradient(rgb(255 255 255 / .22) 1px,transparent 1.3px);background-size:10px 10px}
 textarea::placeholder{font-family:'JetBrains Mono',monospace;color:rgb(var(--mute) / .7);font-size:15px}
 textarea:focus,input:focus{outline:none}
-.rail{width:40px;height:40px;border-radius:10px;color:rgb(var(--mute));font-size:17px}
+#rail{width:var(--rail);transition:width var(--t3) var(--e);overflow:hidden}
+.topbar,#drawer{left:var(--rail);transition:left var(--t3) var(--e)}
+.stage{padding-left:var(--rail);transition:padding-left var(--t3) var(--e)}
+.rail{width:40px;height:40px;border-radius:10px;color:rgb(var(--mute));font-size:17px;display:flex;align-items:center;justify-content:center;gap:10px;flex:none}
 .rail:hover{background:rgb(var(--soft));color:rgb(var(--ink))}
 .rail.act{background:rgb(var(--soft));color:rgb(var(--accent))}
+.rail-label{display:none;font:500 13px Inter,system-ui,sans-serif;white-space:nowrap}
+html:not(.rail-collapsed) .rail{width:100%;justify-content:flex-start;padding:0 10px}
+html:not(.rail-collapsed) .rail-label{display:inline}
+html:not(.rail-collapsed) #rail [data-tip]:hover::after{content:none;display:none}
+html.rail-collapsed #rail{align-items:center}
 .pdot{width:12px;height:12px;border-radius:50%;border:2px solid rgb(var(--line));background:rgb(var(--panel));flex:none;transition:all var(--t3) var(--e)}
 .pstep.active .pdot{border-color:rgb(var(--accent));box-shadow:0 0 0 4px rgb(var(--accent) / .15)}
 .pstep.done .pdot{border-color:rgb(var(--ok));background:rgb(var(--ok))}
@@ -99,23 +109,26 @@ textarea:focus,input:focus{outline:none}
 </head>
 <body class="min-h-screen overflow-x-hidden">
 
-<nav class="fixed left-0 top-0 bottom-0 w-14 border-r border-line bg-panel z-40 flex flex-col items-center py-3 gap-1">
-  <div class="w-8 h-8 rounded-lg bg-accent grid place-items-center mb-3"><div class="w-3 h-3 rounded-full bg-panel"></div></div>
-  <button class="rail press" data-view="run" data-tip="Mission">◎</button>
-  <button class="rail press" data-view="whisper" data-tip="Whisper A/B">∿</button>
-  <button class="rail press" data-view="audit" data-tip="Audit">☰</button>
-  <div class="w-6 h-px bg-line my-2"></div>
-  <button class="rail press" data-drawer="amp" data-tip="Amplitude">▦</button>
-  <button class="rail press" data-drawer="mem" data-tip="Memory">✦</button>
-  <button class="rail press" data-drawer="aud" data-tip="Audit stream">⧗</button>
+<nav id="rail" class="fixed left-0 top-0 bottom-0 border-r border-line bg-panel z-40 flex flex-col py-3 gap-1 px-2">
+  <div class="flex items-center gap-2 mb-3 px-1 h-8">
+    <div class="w-8 h-8 rounded-lg bg-accent grid place-items-center shrink-0"><div class="w-3 h-3 rounded-full bg-panel"></div></div>
+    <span class="rail-label font-semibold tracking-tight">tu<span class="text-accent">no</span></span>
+  </div>
+  <button class="rail press" data-view="run" data-tip="Mission"><span>◎</span><span class="rail-label">Mission</span></button>
+  <button class="rail press" data-view="jobs" data-tip="Jobs"><span>⧗</span><span class="rail-label">Jobs</span></button>
+  <button class="rail press" data-view="audit" data-tip="Audit"><span>☰</span><span class="rail-label">Audit</span></button>
+  <div class="h-px bg-line my-2 mx-2"></div>
+  <button class="rail press" data-drawer="mem" data-tip="Memory"><span>✦</span><span class="rail-label">Memory</span></button>
+  <button class="rail press" data-drawer="aud" data-tip="Audit stream"><span>☰</span><span class="rail-label">Audit stream</span></button>
+  <button id="railToggle" class="rail press mt-auto" type="button" data-tip="Collapse sidebar" aria-label="Collapse sidebar"><span id="railToggleIcon">‹</span><span class="rail-label" id="railToggleLabel">Collapse</span></button>
 </nav>
 
-<aside id="drawer" class="drawer fixed left-14 top-0 bottom-0 w-80 bg-panel border-r border-line z-30 overflow-y-auto p-5 shadow-xl">
+<aside id="drawer" class="drawer fixed top-0 bottom-0 w-80 bg-panel border-r border-line z-30 overflow-y-auto p-5 shadow-xl">
   <div class="flex items-center justify-between mb-4"><h3 id="drawerTitle" class="font-semibold"></h3><button id="drawerClose" class="text-mute hover:text-ink press">✕</button></div>
   <div id="drawerBody"></div>
 </aside>
 
-<header class="fixed left-14 right-0 top-0 h-14 border-b border-line bg-panel/85 backdrop-blur z-20 flex items-center px-5 gap-4">
+<header class="topbar fixed right-0 top-0 h-14 border-b border-line bg-panel/85 backdrop-blur z-20 flex items-center px-5 gap-4">
   <div class="font-semibold tracking-tight">tu<span class="text-accent">no</span></div>
   <div class="ml-auto flex items-center gap-2 text-xs">
     <div class="flex items-center gap-2 px-3 h-8 rounded-full border border-line bg-panel" data-tip="GPU spend to date · live burn from jl list">
@@ -130,7 +143,7 @@ textarea:focus,input:focus{outline:none}
   </div>
 </header>
 
-<main class="pl-14 pt-14">
+<main class="stage pt-14">
 
   <!-- RUN VIEW -->
   <section id="view-run">
@@ -148,16 +161,32 @@ textarea:focus,input:focus{outline:none}
           </div>
           <div class="flex items-end gap-2 px-1">
             <svg class="text-mute self-start mt-2.5 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9M12 3C9.5 5.7 8.2 8.7 8.2 12s1.3 6.3 3.8 9"/></svg>
-            <textarea id="goal" rows="2" autofocus class="flex-1 bg-transparent resize-none text-base py-2" placeholder="transcribe whispered english better"></textarea>
+            <textarea id="goal" rows="2" autofocus class="flex-1 bg-transparent resize-none text-base py-2" placeholder="describe the behaviour you want — e.g. whispered speech, support tone, SQL from text"></textarea>
             <button id="go" class="press btn-primary w-12 h-11 grid place-items-center text-lg" aria-label="Plan it">→</button>
           </div>
-          <div class="text-[11px] text-mute mono px-1 pt-1">⌘/Ctrl + Enter · LoRA SFT on whisper-small · cap ₹150</div>
+          <div class="text-[11px] text-mute mono px-1 pt-1">⌘/Ctrl + Enter · LoRA SFT · cap ₹150</div>
         </div>
       </div>
       <div class="flex flex-wrap justify-center gap-2 mt-5" id="chips"></div>
     </div>
 
-    <div id="livePanel" class="mx-auto max-w-4xl px-5 py-6">
+    <div id="flow" class="hidden mx-auto max-w-4xl px-5 pt-6 pb-24 grid grid-cols-[128px_minmax(0,1fr)] gap-6">
+      <ol id="stepper" class="sticky top-20 self-start space-y-0"></ol>
+      <div>
+        <div id="taskCard" class="sticky top-16 z-10 panel px-4 py-3 mb-4 flex items-center gap-3 shadow-sm">
+          <span class="text-accent">◎</span>
+          <div class="flex-1 min-w-0"><div class="text-[11px] text-mute">mission · SFT</div><div id="taskText" class="truncate text-sm"></div></div>
+          <span id="streamState" class="mono text-[11px] text-mute"></span>
+          <button id="reset" class="press btn-ghost text-xs px-2.5 py-1">new</button>
+        </div>
+        <div id="phases" class="space-y-3"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- JOBS VIEW -->
+  <section id="view-jobs" class="hidden mx-auto max-w-4xl px-5 pt-8 pb-24">
+    <div id="livePanel">
       <div class="panel p-5">
         <div class="flex flex-wrap items-center gap-3 mb-4">
           <div id="liveLogos" class="flex gap-1.5"></div>
@@ -171,6 +200,7 @@ textarea:focus,input:focus{outline:none}
           </span>
           <button id="liveDispatch" type="button" class="press btn-primary text-xs px-3 h-8" data-tip="one warm-resumed L4, paused on finish">Dispatch run</button>
         </div>
+        <button id="liveBack" type="button" class="hidden text-xs text-accent hover:underline mb-3"></button>
         <div id="liveMeta" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs mb-3">
           <span class="mono">elapsed <span id="liveElapsed">00:00</span></span>
           <span class="mono">est <span id="liveCost">₹—</span> <span id="liveRate" class="text-mute">₹0.00/hr</span></span>
@@ -192,45 +222,10 @@ textarea:focus,input:focus{outline:none}
         <p class="text-[11px] text-mute mt-4">Points relayed from <span class="mono">jl run logs</span> every 15s by the Boat control plane · mirrored to Amplitude as <span class="mono">live_train_step</span> / <span class="mono">live_epoch_eval</span></p>
       </div>
     </div>
-
-    <div id="flow" class="hidden mx-auto max-w-4xl px-5 pt-6 pb-24 grid grid-cols-[128px_minmax(0,1fr)] gap-6">
-      <ol id="stepper" class="sticky top-20 self-start space-y-0"></ol>
-      <div>
-        <div id="taskCard" class="sticky top-16 z-10 panel px-4 py-3 mb-4 flex items-center gap-3 shadow-sm">
-          <span class="text-accent">◎</span>
-          <div class="flex-1 min-w-0"><div class="text-[11px] text-mute">mission · SFT</div><div id="taskText" class="truncate text-sm"></div></div>
-          <span id="streamState" class="mono text-[11px] text-mute"></span>
-          <button id="reset" class="press btn-ghost text-xs px-2.5 py-1">new</button>
-        </div>
-        <div id="phases" class="space-y-3"></div>
-      </div>
+    <div class="mt-6">
+      <h2 class="text-lg font-semibold mb-3">Job history</h2>
+      <div id="jobList" class="space-y-2 text-sm text-mute">no jobs yet</div>
     </div>
-  </section>
-
-  <!-- WHISPER VIEW -->
-  <section id="view-whisper" class="hidden mx-auto max-w-3xl px-5 pt-8 pb-24">
-    <h2 class="text-2xl font-semibold mb-1">Whisper A/B</h2>
-    <p class="text-mute text-sm mb-5">Same clip through base <span class="mono">whisper-small</span> and the M3 LoRA adapter, on the vibetuner CPU. Held-out test = your recordings, never the Expresso split.</p>
-    <div class="panel p-4 mb-4">
-      <div class="flex items-center gap-3">
-        <button id="mic" class="press btn-primary w-12 h-12 rounded-full text-xl grid place-items-center" style="border-radius:999px">●</button>
-        <div class="flex-1"><canvas id="live" height="48" class="w-full h-12"></canvas></div>
-        <label class="press btn-ghost text-xs px-3 py-2 cursor-pointer">upload<input id="file" type="file" accept="audio/*" class="hidden" /></label>
-      </div>
-      <div class="flex items-center gap-3 mt-3 text-xs text-mute">
-        <span id="micState" class="mono">mic idle</span>
-        <label class="ml-auto flex items-center gap-2"><input id="gpuToggle" type="checkbox" /> GPU fallback</label>
-        <span id="gpuBadge" class="hidden mono px-2 py-0.5 rounded-full border border-warn text-warn">cap ₹20</span>
-      </div>
-      <div id="gpuNote" class="hidden text-xs text-warn mt-2"></div>
-    </div>
-    <div class="grid grid-cols-2 gap-4">
-      <div class="panel p-4"><div class="flex justify-between text-xs text-mute mb-2"><span>BASE · whisper-small</span><span id="baseMeta" class="mono"></span></div>
-        <canvas id="wBase" height="56" class="w-full h-14 mb-3"></canvas><div id="tBase" class="min-h-[72px] leading-relaxed"></div></div>
-      <div class="panel p-4"><div class="flex justify-between text-xs text-mute mb-2"><span>TUNED · + M3 LoRA</span><span id="tunedMeta" class="mono"></span></div>
-        <canvas id="wTuned" height="56" class="w-full h-14 mb-3"></canvas><div id="tTuned" class="min-h-[72px] leading-relaxed"></div></div>
-    </div>
-    <p id="wNote" class="text-xs text-mute mt-3"></p>
   </section>
 
   <!-- AUDIT VIEW -->
@@ -274,6 +269,19 @@ $('#themeBtn').onclick = () => {
   if (typeof paintLive === 'function') paintLive();
 };
 paintThemeBtn();
+
+/* ---------------- rail ---------------- */
+function railCollapsed() { return document.documentElement.classList.contains('rail-collapsed'); }
+function applyRail(collapsed) {
+  document.documentElement.classList.toggle('rail-collapsed', collapsed);
+  try { localStorage.setItem('tuno-rail', collapsed ? 'collapsed' : 'open'); } catch {}
+  const icon = $('#railToggleIcon'), lab = $('#railToggleLabel'), btn = $('#railToggle');
+  if (icon) icon.textContent = collapsed ? '›' : '‹';
+  if (lab) lab.textContent = collapsed ? 'Expand' : 'Collapse';
+  if (btn) { btn.dataset.tip = collapsed ? 'Expand sidebar' : 'Collapse sidebar'; btn.setAttribute('aria-label', btn.dataset.tip); }
+}
+applyRail(railCollapsed());
+$('#railToggle').onclick = () => applyRail(!railCollapsed());
 
 /* ---------------- logos ---------------- */
 const LOGOS = {cognee:'cognee.png', contextdev:'context.png', superlinked:'superlinked.png', airbyte:'airbyte.png', amplitude:'amplitude.png',
@@ -666,9 +674,29 @@ async function approve(card) {
       await sleep(200);
       countTo(s.querySelector('.c'), d.predicted_inr, d.actual_inr, {ms: 900, fmt: v => '₹' + v.toFixed(2)});
       countTo(s.querySelector('.w'), d.wer_before*100, d.wer_after*100, {ms: 900, fmt: v => v.toFixed(2) + '%'});
-      const cta = h(`<div class="flex gap-2 mt-5"><button class="press btn-primary px-4 h-10 text-sm" data-go="whisper">Hear the difference →</button>
-        <button class="press btn-ghost px-4 h-10 text-sm" data-go="audit">Open audit trail</button></div>`);
-      cta.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
+      const cta = h(`<div class="mt-5">
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="dispatch-job press btn-primary px-4 h-10 text-sm">Dispatch as live job →</button>
+          <button type="button" class="press btn-ghost px-4 h-10 text-sm" data-go="audit">Open audit trail</button>
+        </div>
+        <div class="dispatch-err hidden text-xs text-bad mt-2"></div>
+      </div>`);
+      cta.querySelector('[data-go]').onclick = () => show('audit');
+      cta.querySelector('.dispatch-job').onclick = async () => {
+        const err = cta.querySelector('.dispatch-err');
+        err.classList.add('hidden'); err.textContent = '';
+        try {
+          const res = await fetch('/api/live/dispatch', {method: 'POST'});
+          let d = {};
+          try { d = await res.json(); } catch {}
+          if (res.ok || res.status === 409) { viewingJobId = null; show('jobs'); loadLive(); return; }
+          err.textContent = d.error || res.statusText || 'dispatch failed';
+          err.classList.remove('hidden');
+        } catch (e) {
+          err.textContent = e.message || 'dispatch failed';
+          err.classList.remove('hidden');
+        }
+      };
       r.querySelector('.cta').append(cta);
       stepState('receipt', 'done', `₹5.24 · ${d.running_gpus ?? '?'} running`);
       loadSpend(); loadStatus();
@@ -680,7 +708,7 @@ async function approve(card) {
 
 /* ---------------- live training ---------------- */
 let LIVE = {state: {}, points: [], active: false, dispatch_enabled: false};
-let liveTimer = null, liveOffline = false;
+let liveTimer = null, liveOffline = false, viewingJobId = null;
 
 function fmtMmSs(sec) {
   const s = Math.max(0, Math.floor(Number(sec) || 0));
@@ -801,6 +829,11 @@ function paintLive() {
   $('#liveCharts').classList.toggle('hidden', empty || wait);
   $('#liveMeta').classList.toggle('opacity-50', empty);
   if (!empty && !wait) requestAnimationFrame(() => paintLiveCharts());
+  const back = $('#liveBack');
+  if (back) {
+    back.classList.toggle('hidden', !viewingJobId);
+    if (viewingJobId) back.textContent = `viewing job ${viewingJobId} · back to live`;
+  }
   const btn = $('#liveDispatch');
   const blocked = !LIVE.dispatch_enabled;
   const off = blocked || !!LIVE.active;
@@ -810,14 +843,18 @@ function paintLive() {
   btn.dataset.tip = blocked ? 'dispatch disabled on this server' : 'one warm-resumed L4, paused on finish';
 }
 async function loadLive() {
+  if (viewingJobId) { scheduleLivePoll(); return; }
   try {
     const r = await fetch('/api/live');
     if (!r.ok) throw new Error('offline');
-    LIVE = await r.json();
+    const data = await r.json();
+    if (viewingJobId) { scheduleLivePoll(); return; }
+    LIVE = data;
     if (!LIVE.state) LIVE.state = {};
     if (!Array.isArray(LIVE.points)) LIVE.points = [];
     liveOffline = false;
   } catch {
+    if (viewingJobId) { scheduleLivePoll(); return; }
     liveOffline = true;
   }
   paintLive();
@@ -844,18 +881,99 @@ function initLivePanel() {
   logos.append(logoTile('jarvislabs', 'JL', 28, true));
   logos.append(logoTile('amplitude', 'AM', 28, true));
   $('#liveDispatch').onclick = dispatchLive;
+  $('#liveBack').onclick = () => { viewingJobId = null; loadLive(); };
   loadLive();
 }
 
 /* ---------------- views + drawers ---------------- */
+let jobsTimer = null;
 function show(v) {
-  for (const x of ['run', 'whisper', 'audit']) $('#view-' + x).classList.toggle('hidden', x !== v);
+  for (const x of ['run', 'jobs', 'audit']) {
+    const el = $('#view-' + x); if (el) el.classList.toggle('hidden', x !== v);
+  }
   document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('act', b.dataset.view === v));
   if (v === 'audit') loadAudit();
+  if (v === 'jobs') { loadJobs(); scheduleJobsPoll(); }
+  else { clearTimeout(jobsTimer); jobsTimer = null; }
   window.scrollTo({top: 0});
 }
 document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => show(b.dataset.view));
 show('run');
+
+function fmtWerPct(v) {
+  if (v == null || v === '') return '—';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '—';
+  return (n <= 1.5 ? n * 100 : n).toFixed(2) + '%';
+}
+function fmtHm(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', hour12: false});
+}
+function jobStatePill(state) {
+  const s = state || '—';
+  const toneKey = s === 'running' || s === 'starting' ? 'accent' : s === 'complete' ? 'ok' : s === 'failed' ? 'bad' : 'mute';
+  return `<span class="mono text-[11px] px-2 py-0.5 rounded-full border" style="color:${tone(toneKey)};border-color:${tone(toneKey)};background:rgb(var(--${toneKey}) / .08)">${esc(s)}</span>`;
+}
+function jobRow(j) {
+  const id = j.id || '—';
+  const row = h(`<button type="button" class="w-full panel p-3 text-left press hover:border-mute">
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="mono text-sm">${esc(id)}</span>
+      ${jobStatePill(j.state)}
+      <span class="mono text-[11px] text-mute ml-auto">${esc(fmtHm(j.started))} · ${esc(j.elapsed != null ? fmtMmSs(j.elapsed) : '—')} · ${esc(inr(j.est_inr))}</span>
+    </div>
+    <div class="text-xs mt-1">WER ${esc(fmtWerPct(j.base_wer))} → ${esc(fmtWerPct(j.best_wer))}</div>
+    <div class="text-[11px] text-mute">stored in ${esc(j.store || '—')}</div>
+  </button>`);
+  if (j.id) row.onclick = () => openJob(j.id);
+  return row;
+}
+async function openJob(id) {
+  try {
+    const r = await fetch('/api/jobs/' + encodeURIComponent(id));
+    if (!r.ok) throw new Error('unknown job');
+    const d = await r.json();
+    viewingJobId = id;
+    LIVE = {
+      state: d.state || {},
+      points: Array.isArray(d.points) ? d.points : [],
+      active: false,
+      dispatch_enabled: LIVE.dispatch_enabled,
+    };
+    liveOffline = false;
+    paintLive();
+  } catch (e) {
+    const err = $('#liveErr');
+    err.textContent = e.message || 'failed to load job';
+    err.classList.remove('hidden');
+  }
+}
+async function loadJobs() {
+  const list = $('#jobList'); if (!list) return;
+  try {
+    const r = await fetch('/api/jobs');
+    if (!r.ok) throw new Error('fail');
+    const d = await r.json();
+    const jobs = Array.isArray(d.jobs) ? d.jobs : [];
+    if (!jobs.length) { list.textContent = 'no jobs yet'; return; }
+    list.innerHTML = '';
+    jobs.forEach(j => list.append(jobRow(j)));
+  } catch {
+    list.textContent = 'no jobs yet';
+  }
+}
+function scheduleJobsPoll() {
+  clearTimeout(jobsTimer);
+  jobsTimer = setTimeout(() => {
+    if ($('#view-jobs') && !$('#view-jobs').classList.contains('hidden')) {
+      loadJobs();
+      scheduleJobsPoll();
+    }
+  }, 10000);
+}
 
 let openDrawer = null;
 document.querySelectorAll('[data-drawer]').forEach(b => b.onclick = () => toggleDrawer(b.dataset.drawer));
@@ -863,30 +981,7 @@ $('#drawerClose').onclick = () => toggleDrawer(null);
 function toggleDrawer(k) {
   if (k === openDrawer || !k) { $('#drawer').classList.remove('open'); openDrawer = null; return; }
   openDrawer = k; $('#drawer').classList.add('open');
-  ({amp: drawAmp, mem: drawMem, int: drawInt, aud: drawAud})[k]();
-}
-
-async function drawAmp() {
-  $('#drawerTitle').textContent = 'Amplitude'; const b = $('#drawerBody');
-  b.innerHTML = '<div class="shimmer h-24 mb-3"></div><div class="shimmer h-24"></div>';
-  await loadSpend(); const s = SPEND; if (!s) return;
-  b.innerHTML = `<div class="flex items-center justify-between mb-4"><span class="text-[11px] px-2 py-0.5 rounded-full border ${s.amplitude.enabled ? 'border-ok text-ok' : 'border-line text-mute'}">${esc(s.amplitude.label)}</span>
-    <a class="text-xs text-accent hover:underline" href="${s.amplitude.url}" target="_blank" rel="noopener">open ↗</a></div>
-    <div class="text-[11px] text-mute mb-4 mono">source: ${esc(s.source)}</div>`;
-  const chart = (title, rows) => {
-    const max = Math.max(1, ...rows.map(r => r.v));
-    const c = h(`<div class="mb-6"><div class="text-xs font-medium mb-2">${esc(title)}</div><div class="space-y-1.5"></div></div>`);
-    rows.forEach(r => c.lastChild.append(h(`<div class="flex items-center gap-2 text-[11px]"><span class="w-28 truncate text-mute">${esc(r.k)}</span>
-      <span class="flex-1 h-3 bg-soft rounded overflow-hidden"><span class="bar block h-full" style="width:0;background:${r.c}" data-w="${r.v/max*100}%"></span></span>
-      <span class="mono w-12 text-right">${esc(r.label ?? r.v)}</span></div>`)));
-    b.append(c);
-  };
-  chart('Predicted vs actual ₹ by run', s.runs.flatMap(r => [
-    {k: `${r.phase} predicted`, v: r.predicted_inr || 0, label: inr(r.predicted_inr), c: tone('mute')},
-    {k: `${r.phase} actual`, v: r.actual_inr || 0, label: inr(r.actual_inr), c: tone('accent')}]));
-  chart('M3 funnel (events)', s.funnel.map(f => ({k: f.event, v: f.count, c: tone('ok')})));
-  chart('Tool calls', s.tools.map(t => ({k: t.tool, v: t.count, c: tone('warn')})));
-  requestAnimationFrame(() => requestAnimationFrame(() => b.querySelectorAll('.bar').forEach(x => x.style.width = x.dataset.w)));
+  ({mem: drawMem, int: drawInt, aud: drawAud})[k]();
 }
 
 function drawMem() {
@@ -898,12 +993,33 @@ function drawMem() {
     const c = h(`<button class="press text-[11px] px-2 py-1 rounded-full border border-accent/40 text-accent">✦ ${esc(q)}</button>`);
     c.onclick = () => { $('#mq').value = q; ask(); }; $('#mchips').append(c);
   });
+  const formatMemoryHit = (raw) => {
+    let s = String(raw ?? '');
+    s = s.replace(/\\n/g, '\n');
+    s = s.replace(/```/g, '');
+    s = s.replace(/\*\*/g, '');
+    s = s.replace(/^#+\s*/gm, '');
+    s = s.replace(/^\s*-\s+/gm, '');
+    s = s.replace(/\n{3,}/g, '\n\n');
+    s = s.trim();
+    if (s.length > 350) s = s.slice(0, 350) + '…';
+    return s;
+  };
   const ask = async () => {
     const a = $('#mans'); a.innerHTML = '<div class="shimmer h-16"></div><div class="shimmer h-16"></div>';
     try {
       const r = await (await fetch('/api/memory', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({q: $('#mq').value})})).json();
-      a.innerHTML = `<div class="text-[11px] text-mute mono">source: ${esc(r.source)}</div>`;
-      r.hits.forEach((x, i) => a.append(h(`<div class="enter text-xs border-l-2 border-accent/60 pl-2" style="animation-delay:${i*60}ms">${esc(x.replace(/\*\*/g, ''))}</div>`)));
+      a.innerHTML = '';
+      const hits = Array.isArray(r.hits) ? r.hits : [];
+      if (!hits.length) { a.append(h('<div class="text-xs text-mute">no hits</div>')); return; }
+      hits.forEach((x, i) => {
+        const card = h(`<div class="enter panel p-3" style="animation-delay:${i*60}ms">
+          <div class="text-[10px] mono text-accent mb-1.5">cognee · cross-context memory</div>
+          <div class="hit text-xs whitespace-pre-wrap leading-relaxed"></div>
+        </div>`);
+        card.querySelector('.hit').textContent = formatMemoryHit(x);
+        a.append(card);
+      });
     } catch (e) { a.innerHTML = `<div class="text-bad text-xs">${esc(e)}</div>`; }
   };
   $('#mgo').onclick = ask; $('#mq').onkeydown = e => { if (e.key === 'Enter') ask(); };
@@ -972,94 +1088,6 @@ $('#copyReceipt').onclick = async () => {
   catch { $('#copyReceipt').textContent = 'copy blocked'; }
   setTimeout(() => $('#copyReceipt').textContent = 'copy receipt', 1500);
 };
-
-/* ---------------- whisper ---------------- */
-let mediaRec = null, chunks = [], actx = null, analyser = null, liveRaf = 0;
-const liveCv = $('#live');
-function fitCanvas(cv) { const r = cv.getBoundingClientRect(); cv.width = r.width * devicePixelRatio; cv.height = r.height * devicePixelRatio; return cv.getContext('2d'); }
-function drawLive() {
-  const ctx = fitCanvas(liveCv); const data = new Uint8Array(analyser.fftSize); const col = cssRgb('accent');
-  const loop = () => {
-    analyser.getByteTimeDomainData(data);
-    ctx.clearRect(0, 0, liveCv.width, liveCv.height); ctx.strokeStyle = col; ctx.lineWidth = 2 * devicePixelRatio; ctx.beginPath();
-    for (let i = 0; i < data.length; i++) { const x = i / data.length * liveCv.width, y = data[i] / 255 * liveCv.height; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-    ctx.stroke(); liveRaf = requestAnimationFrame(loop);
-  };
-  loop();
-}
-async function drawWave(cv, blob, color) {
-  const ctx = fitCanvas(cv);
-  try {
-    const ac = new (window.AudioContext || window.webkitAudioContext)();
-    const buf = await ac.decodeAudioData(await blob.arrayBuffer()); const ch = buf.getChannelData(0);
-    const bars = Math.floor(cv.width / (4 * devicePixelRatio)), step = Math.floor(ch.length / bars);
-    ctx.clearRect(0, 0, cv.width, cv.height); ctx.fillStyle = color;
-    for (let i = 0; i < bars; i++) { let m = 0; for (let j = 0; j < step; j++) m = Math.max(m, Math.abs(ch[i*step + j] || 0));
-      const bh = Math.max(2, m * cv.height); ctx.fillRect(i * 4 * devicePixelRatio, (cv.height - bh) / 2, 2.5 * devicePixelRatio, bh); }
-    ac.close();
-  } catch (e) { ctx.fillStyle = cssRgb('mute'); ctx.font = `${11*devicePixelRatio}px JetBrains Mono`; ctx.fillText('waveform preview unavailable', 4, cv.height / 2); }
-}
-$('#mic').onclick = async () => {
-  if (mediaRec && mediaRec.state === 'recording') { mediaRec.stop(); return; }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({audio: true});
-    actx = new AudioContext(); analyser = actx.createAnalyser(); analyser.fftSize = 1024;
-    actx.createMediaStreamSource(stream).connect(analyser); drawLive();
-    chunks = []; mediaRec = new MediaRecorder(stream);
-    mediaRec.ondataavailable = e => chunks.push(e.data);
-    mediaRec.onstop = () => { cancelAnimationFrame(liveRaf); stream.getTracks().forEach(t => t.stop()); actx.close();
-      $('#mic').textContent = '●'; $('#mic').style.background = ''; $('#micState').textContent = 'processing';
-      transcribe(new Blob(chunks, {type: mediaRec.mimeType || 'audio/webm'}), 'mic.webm'); };
-    mediaRec.start(); $('#mic').textContent = '■'; $('#mic').style.background = tone('bad'); $('#micState').textContent = 'LIVE · recording — whisper a sentence, click ■ to stop';
-  } catch (e) { $('#micState').textContent = 'mic blocked: ' + e.message; }
-};
-$('#file').onchange = e => { const f = e.target.files[0]; if (f) transcribe(f, f.name); };
-$('#gpuToggle').onchange = e => {
-  const on = e.target.checked; $('#gpuBadge').classList.toggle('hidden', !on);
-  const note = $('#gpuNote'); note.classList.toggle('hidden', !on);
-  note.textContent = STATUS?.whisper_gpu_fallback ? 'server flag WHISPER_GPU_FALLBACK is on — slow CPU clips may use a capped GPU.'
-    : 'server flag WHISPER_GPU_FALLBACK is off — this demo stays on CPU; no GPU will be created.';
-};
-
-function diffWords(a, b) {
-  const A = a.split(/\s+/).filter(Boolean), B = b.split(/\s+/).filter(Boolean), norm = w => w.toLowerCase().replace(/[^\w']/g, '');
-  const dp = Array.from({length: A.length + 1}, () => new Array(B.length + 1).fill(0));
-  for (let i = A.length - 1; i >= 0; i--) for (let j = B.length - 1; j >= 0; j--)
-    dp[i][j] = norm(A[i]) === norm(B[j]) ? dp[i+1][j+1] + 1 : Math.max(dp[i+1][j], dp[i][j+1]);
-  const ra = [], rb = []; let i = 0, j = 0;
-  while (i < A.length && j < B.length) {
-    if (norm(A[i]) === norm(B[j])) { ra.push([A[i], 0]); rb.push([B[j], 0]); i++; j++; }
-    else if (dp[i+1][j] >= dp[i][j+1]) ra.push([A[i++], 1]); else rb.push([B[j++], 1]);
-  }
-  while (i < A.length) ra.push([A[i++], 1]); while (j < B.length) rb.push([B[j++], 1]);
-  return [ra, rb];
-}
-async function typewrite(el, words, cls) {
-  el.innerHTML = ''; const caret = h('<span class="caret">&nbsp;</span>'); el.append(caret);
-  for (const [w, changed] of words) {
-    const s = document.createElement('span'); s.textContent = w + ' ';
-    if (changed) s.className = cls; el.insertBefore(s, caret); if (!reduced) await sleep(45);
-  }
-  caret.remove();
-}
-async function transcribe(blob, name) {
-  drawWave($('#wBase'), blob, cssRgb('mute')); drawWave($('#wTuned'), blob, cssRgb('accent'));
-  for (const id of ['#tBase', '#tTuned']) $(id).innerHTML = '<div class="shimmer h-4 mb-2"></div><div class="shimmer h-4 w-2/3"></div>';
-  $('#baseMeta').textContent = $('#tunedMeta').textContent = 'CPU transcribing…'; $('#wNote').textContent = '';
-  const fd = new FormData(); fd.append('file', blob, name);
-  try {
-    const res = await fetch('/api/transcribe', {method: 'POST', body: fd}); const r = await res.json();
-    if (!res.ok || r.error) throw new Error(r.error || res.statusText);
-    const [ra, rb] = diffWords(r.base || '', r.tuned || '');
-    $('#baseMeta').textContent = $('#tunedMeta').textContent = `${r.device} · ${r.sec}s · clip ${r.clip_sec}s`;
-    $('#micState').textContent = 'done';
-    await Promise.all([typewrite($('#tBase'), ra, 'line-through decoration-bad text-bad'), typewrite($('#tTuned'), rb, 'text-ok bg-ok/10 rounded px-0.5')]);
-    $('#wNote').textContent = (r.note ? r.note + ' · ' : '') + 'red/green = words that differ between the two models (no reference transcript for live clips).';
-  } catch (e) {
-    $('#tBase').innerHTML = $('#tTuned').innerHTML = `<span class="text-bad text-sm">${esc(e.message)}</span>`;
-    $('#baseMeta').textContent = $('#tunedMeta').textContent = 'error'; $('#micState').textContent = 'error';
-  }
-}
 
 loadStatus(); loadSpend(); initLivePanel();
 setInterval(loadStatus, 30000);
