@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>vibetuning · mission control</title>
+<meta property="og:title" content="vibetuning — an agent that buys its own fine-tune" />
+<meta property="og:description" content="Shops datasets + GPU, checks licenses, quotes with memory of past overruns, and keeps an audit trail from prompt to weights." />
+<meta property="og:image" content="https://raw.githubusercontent.com/mdrazak2001/vibetuning/master/artifacts/m3/og.png" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230B0C0E'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23FFB224'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: {
+  colors: { bg:'#0B0C0E', panel:'#14161A', line:'#262A31', accent:'#FFB224', ok:'#34D399', warn:'#FBBF24', bad:'#F87171', ink:'#E8EAED', mute:'#8A9099' },
+  fontFamily: { sans:['Inter','system-ui','sans-serif'], mono:['JetBrains Mono','ui-monospace','monospace'] },
+}}};
+</script>
+<style>
+:root{--e:cubic-bezier(0.22,1,0.36,1);--t1:150ms;--t2:250ms;--t3:400ms}
+html,body{background:#0B0C0E;color:#E8EAED}
+body{font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+.panel{background:#14161A;border:1px solid #262A31;border-radius:14px}
+.press{transition:transform var(--t1) var(--e),box-shadow var(--t2) var(--e),border-color var(--t2) var(--e),background var(--t2) var(--e)}
+.press:active{transform:scale(.98)}
+.enter{opacity:0;transform:translateY(8px);animation:enter 200ms var(--e) forwards}
+@keyframes enter{to{opacity:1;transform:none}}
+.scale-in{opacity:0;transform:scale(.96);animation:scalein var(--t3) var(--e) forwards}
+@keyframes scalein{to{opacity:1;transform:none}}
+.orb{position:absolute;width:520px;height:520px;border-radius:50%;filter:blur(90px);opacity:.22;
+  background:radial-gradient(circle at 30% 30%,#FFB224,transparent 60%),radial-gradient(circle at 70% 70%,#34D399,transparent 55%);
+  animation:breathe 7s ease-in-out infinite;pointer-events:none}
+@keyframes breathe{0%,100%{transform:scale(.92);opacity:.16}50%{transform:scale(1.06);opacity:.28}}
+.ring{width:18px;height:18px;border-radius:50%;background:conic-gradient(#FFB224 0 25%,transparent 25% 100%);
+  -webkit-mask:radial-gradient(circle,transparent 6px,#000 7px);mask:radial-gradient(circle,transparent 6px,#000 7px);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.check{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;animation:pop var(--t2) var(--e)}
+@keyframes pop{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
+.tile{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font:600 11px 'JetBrains Mono';filter:grayscale(1) brightness(.7);transition:filter var(--t3) var(--e)}
+.tile.lit{filter:none}
+.sparkle{position:relative}
+.sparkle::after{content:'✦';position:absolute;right:-14px;top:-6px;color:#FFB224;font-size:12px;animation:twinkle 1.6s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.2;transform:scale(.7) rotate(0)}50%{opacity:1;transform:scale(1.1) rotate(20deg)}}
+.radar{position:relative;width:32px;height:32px}
+.radar::before,.radar::after{content:'';position:absolute;inset:0;border-radius:50%;border:1px solid #FFB224;animation:radar 1.6s var(--e) infinite}
+.radar::after{animation-delay:.8s}
+@keyframes radar{0%{transform:scale(.3);opacity:1}100%{transform:scale(1.6);opacity:0}}
+.stamp{animation:stamp 420ms var(--e) forwards;opacity:0}
+@keyframes stamp{0%{opacity:0;transform:scale(1.8) rotate(-24deg)}100%{opacity:1;transform:scale(1) rotate(-8deg)}}
+.shimmer{background:linear-gradient(90deg,#1b1e23 0%,#262A31 40%,#1b1e23 80%);background-size:200% 100%;animation:shimmer 1.3s linear infinite;border-radius:6px}
+@keyframes shimmer{to{background-position:-200% 0}}
+.glow{box-shadow:0 0 0 1px #FFB224,0 0 24px -2px rgba(255,178,36,.55);animation:glow 2.2s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 0 1px #FFB224,0 0 40px 2px rgba(255,178,36,.75)}}
+.pulse-dot{width:8px;height:8px;border-radius:50%;position:relative}
+.pulse-dot.on::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid currentColor;animation:radar 1.8s var(--e) infinite}
+.bar{transition:width 600ms var(--e),height 600ms var(--e)}
+.drawer{transform:translateX(-340px);transition:transform var(--t3) var(--e)}
+.drawer.open{transform:none}
+.opt{border:1px solid #262A31}
+.opt:hover:not(.disabled){transform:translateY(-2px);border-color:#3a3f48}
+.opt.sel{border-color:#FFB224;box-shadow:0 0 0 1px #FFB224 inset}
+.opt.disabled{opacity:.42;cursor:not-allowed}
+.caret{display:inline-block;width:7px;background:#FFB224;animation:blink 1s steps(1) infinite;margin-left:1px}
+@keyframes blink{50%{opacity:0}}
+.ticker-tick{animation:tick 600ms var(--e)}
+@keyframes tick{0%{color:#FFB224}100%{color:inherit}}
+details>summary{list-style:none;cursor:pointer}
+details>summary::-webkit-details-marker{display:none}
+::selection{background:#FFB22455}
+textarea:focus,input:focus{outline:none}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important}
+  .orb{animation:none}
+}
+</style>
+</head>
+<body class="min-h-screen overflow-x-hidden">
+
+<!-- rail -->
+<nav class="fixed left-0 top-0 bottom-0 w-14 border-r border-line bg-bg z-40 flex flex-col items-center py-3 gap-1">
+  <div class="w-8 h-8 rounded-lg bg-accent/90 grid place-items-center mb-3"><div class="w-3 h-3 rounded-full bg-bg"></div></div>
+  <button class="rail press" data-view="run" title="Mission">◎</button>
+  <button class="rail press" data-view="whisper" title="Whisper A/B">∿</button>
+  <button class="rail press" data-view="audit" title="Audit">☰</button>
+  <div class="w-6 h-px bg-line my-2"></div>
+  <button class="rail press" data-drawer="amp" title="Amplitude">▦</button>
+  <button class="rail press" data-drawer="mem" title="Memory">✦</button>
+  <button class="rail press" data-drawer="int" title="Integrations">⬡</button>
+  <button class="rail press" data-drawer="aud" title="Audit stream">⧗</button>
+</nav>
+<style>.rail{width:40px;height:40px;border-radius:10px;color:#8A9099;font-size:17px}.rail:hover{background:#14161A;color:#E8EAED}.rail.act{background:#14161A;color:#FFB224}</style>
+
+<!-- drawer -->
+<aside id="drawer" class="drawer fixed left-14 top-0 bottom-0 w-80 bg-panel border-r border-line z-30 overflow-y-auto p-5">
+  <div class="flex items-center justify-between mb-4"><h3 id="drawerTitle" class="font-semibold"></h3><button id="drawerClose" class="text-mute hover:text-ink press">✕</button></div>
+  <div id="drawerBody"></div>
+</aside>
+
+<!-- top bar -->
+<header class="fixed left-14 right-0 top-0 h-14 border-b border-line bg-bg/80 backdrop-blur z-20 flex items-center px-5 gap-4">
+  <div class="font-semibold tracking-tight">vibe<span class="text-accent">tuning</span> <span class="text-mute text-xs font-normal ml-1">mission control</span></div>
+  <div id="pills" class="flex gap-1.5 overflow-hidden min-w-0 flex-1"></div>
+  <div class="ml-auto flex items-center gap-3 text-xs shrink-0">
+    <span class="text-mute">GPU spend</span>
+    <span id="burn" class="mono text-sm text-ink">₹—</span>
+    <span id="burnRate" class="mono text-mute">₹0.00/hr</span>
+    <span id="running" class="mono px-2 py-0.5 rounded-full border border-line text-mute">— running</span>
+  </div>
+</header>
+
+<main class="pl-14 pt-14">
+<div class="mx-auto max-w-3xl px-5 pb-24">
+
+  <!-- RUN VIEW -->
+  <section id="view-run">
+    <div id="hero" class="relative min-h-[70vh] flex flex-col justify-center">
+      <div class="orb -left-24 top-0"></div>
+      <h1 class="relative text-4xl font-semibold tracking-tight mb-2">What should your model learn?</h1>
+      <p class="relative text-mute mb-6">The agent finds data, checks licenses, recalls past overruns, and quotes the GPU before it spends anything.</p>
+      <div class="relative panel p-3 press focus-within:border-accent/60">
+        <textarea id="goal" rows="3" autofocus class="w-full bg-transparent resize-none text-lg placeholder:text-mute/60" placeholder="e.g. Transcribe whispered English better without forgetting normal speech."></textarea>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-mute mono">⌘/Ctrl + Enter</span>
+          <button id="go" class="press px-4 h-9 rounded-lg bg-accent text-bg font-semibold flex items-center gap-2"><span id="goLabel">Plan it</span></button>
+        </div>
+      </div>
+      <div class="relative flex flex-wrap gap-2 mt-4" id="chips"></div>
+    </div>
+
+    <div id="taskCard" class="hidden sticky top-16 z-10 panel px-4 py-3 mt-6 flex items-center gap-3 scale-in">
+      <span class="text-accent">◎</span>
+      <div class="flex-1 min-w-0"><div class="text-xs text-mute">mission</div><div id="taskText" class="truncate"></div></div>
+      <span id="streamState" class="mono text-xs text-mute"></span>
+      <button id="reset" class="press text-xs text-mute hover:text-ink border border-line rounded-md px-2 py-1">new</button>
+    </div>
+
+    <div id="stream" class="mt-5 space-y-2"></div>
+    <div id="choices" class="mt-6"></div>
+    <div id="quote" class="mt-6"></div>
+    <div id="receipt" class="mt-6"></div>
+  </section>
+
+  <!-- WHISPER VIEW -->
+  <section id="view-whisper" class="hidden pt-8">
+    <h2 class="text-2xl font-semibold mb-1">Whisper A/B</h2>
+    <p class="text-mute text-sm mb-5">Same clip through base <span class="mono">whisper-small</span> and the M3 LoRA adapter, on the vibetuner CPU. Held-out test = your recordings, never the Expresso split.</p>
+    <div class="panel p-4 mb-4">
+      <div class="flex items-center gap-3">
+        <button id="mic" class="press w-12 h-12 rounded-full bg-accent text-bg text-xl grid place-items-center">●</button>
+        <div class="flex-1"><canvas id="live" height="48" class="w-full h-12"></canvas></div>
+        <label class="press text-xs border border-line rounded-md px-3 py-2 cursor-pointer text-mute hover:text-ink">upload<input id="file" type="file" accept="audio/*" class="hidden" /></label>
+      </div>
+      <div class="flex items-center gap-3 mt-3 text-xs text-mute">
+        <span id="micState" class="mono">mic idle</span>
+        <label class="ml-auto flex items-center gap-2"><input id="gpuToggle" type="checkbox" class="accent-[#FFB224]" /> GPU fallback</label>
+        <span id="gpuBadge" class="hidden mono px-2 py-0.5 rounded-full border border-warn text-warn">cap ₹20</span>
+      </div>
+      <div id="gpuNote" class="hidden text-xs text-warn mt-2"></div>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="panel p-4"><div class="flex justify-between text-xs text-mute mb-2"><span>BASE · whisper-small</span><span id="baseMeta" class="mono"></span></div>
+        <canvas id="wBase" height="56" class="w-full h-14 mb-3"></canvas><div id="tBase" class="min-h-[72px] leading-relaxed"></div></div>
+      <div class="panel p-4"><div class="flex justify-between text-xs text-mute mb-2"><span>TUNED · + M3 LoRA</span><span id="tunedMeta" class="mono"></span></div>
+        <canvas id="wTuned" height="56" class="w-full h-14 mb-3"></canvas><div id="tTuned" class="min-h-[72px] leading-relaxed"></div></div>
+    </div>
+    <p id="wNote" class="text-xs text-mute mt-3"></p>
+  </section>
+
+  <!-- AUDIT VIEW -->
+  <section id="view-audit" class="hidden pt-8">
+    <div class="flex items-end justify-between mb-4">
+      <div><h2 class="text-2xl font-semibold">Audit trail</h2><div id="lineage" class="mono text-xs text-mute mt-1"></div></div>
+      <button id="copyReceipt" class="press text-xs border border-line rounded-md px-3 py-2 hover:border-accent">copy receipt</button>
+    </div>
+    <div id="auditReceipt" class="panel p-4 mb-4 mono text-sm"></div>
+    <ol id="timeline" class="relative border-l border-line ml-2"></ol>
+  </section>
+
+</div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const h = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const inr = (n, d=2) => n == null ? '—' : '₹' + Number(n).toFixed(d);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function countTo(el, from, to, {ms=600, fmt=v=>v.toFixed(2)}={}) {
+  if (reduced) { el.textContent = fmt(to); return; }
+  const t0 = performance.now();
+  const step = t => { const p = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(from + (to - from) * e); if (p < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
+/* ---------------- SSE over fetch with resume ---------------- */
+async function sse(url, body, onEvent) {
+  let streamId = null, lastId = -1, ended = false, tries = 0;
+  const consume = async (res) => {
+    streamId = streamId || res.headers.get('X-Stream-Id');
+    const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = '';
+    while (true) {
+      const {value, done} = await reader.read(); if (done) break;
+      buf += dec.decode(value, {stream: true});
+      let i; while ((i = buf.indexOf('\n\n')) >= 0) {
+        const chunk = buf.slice(0, i); buf = buf.slice(i + 2);
+        let ev = 'message', data = '', id = null;
+        for (const line of chunk.split('\n')) {
+          if (line.startsWith('event: ')) ev = line.slice(7);
+          else if (line.startsWith('data: ')) data += line.slice(6);
+          else if (line.startsWith('id: ')) id = +line.slice(4);
+        }
+        if (!data) continue;
+        if (id != null) { if (id <= lastId) continue; lastId = id; }
+        const payload = JSON.parse(data);
+        if (ev === 'end') ended = true;
+        await onEvent(ev, payload);
+      }
+    }
+  };
+  try { await consume(await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})); }
+  catch (e) { console.warn('stream drop', e); }
+  while (!ended && streamId && tries < 6) {
+    tries++; setStreamState(`reconnecting… ${tries}`); await sleep(400 * tries);
+    try { const r = await fetch(`/api/streams/${streamId}?after=${lastId}`); if (r.ok) { setStreamState('resumed'); await consume(r); } }
+    catch (e) { console.warn('resume drop', e); }
+  }
+  if (!ended) onEvent('error', {error: 'stream lost after retries'});
+  return streamId;
+}
+const setStreamState = t => { $('#streamState').textContent = t; };
+
+/* ---------------- status / top bar ---------------- */
+let STATUS = null, SPEND = null;
+async function loadStatus() {
+  try { STATUS = await (await fetch('/api/status')).json(); } catch { return; }
+  const pills = $('#pills'); pills.innerHTML = '';
+  for (const t of STATUS.tiles) {
+    const col = t.live ? '#34D399' : t.on ? '#FBBF24' : '#5b616b';
+    pills.append(h(`<span title="${esc(t.note)}" class="text-[11px] whitespace-nowrap px-2 py-0.5 rounded-full border border-line flex items-center gap-1.5">
+      <span class="w-1.5 h-1.5 rounded-full" style="background:${col}"></span>${esc(t.name)}</span>`));
+  }
+  const j = STATUS.jarvis || {};
+  const run = $('#running');
+  if (j.ok) { run.textContent = `${j.running} running`; run.style.color = j.running ? '#F87171' : '#34D399';
+    $('#burnRate').textContent = `₹${((j.running || 0) * (j.l4_inr_per_hr || 0)).toFixed(2)}/hr`; }
+  else run.textContent = 'jl unavailable';
+}
+async function loadSpend() {
+  try { SPEND = await (await fetch('/api/spend')).json(); } catch { return; }
+  const el = $('#burn'); const prev = parseFloat((el.textContent || '').replace(/[^\d.]/g, '')) || 0;
+  countTo(el, prev, SPEND.gpu_spend_inr, {fmt: v => '₹' + v.toFixed(2)});
+  el.classList.remove('ticker-tick'); void el.offsetWidth; el.classList.add('ticker-tick');
+}
+
+/* ---------------- hero ---------------- */
+const EXAMPLES = [
+  'Transcribe whispered English better without forgetting normal speech.',
+  'Make ASR robust to ASMR-style soft voices, licence-clean data only.',
+  'Fine-tune a speech model for quiet late-night voice notes under ₹20.',
+];
+for (const ex of EXAMPLES) {
+  const b = h(`<button class="press text-sm px-3 py-1.5 rounded-full border border-line text-mute hover:text-ink hover:border-accent/60">${esc(ex)}</button>`);
+  b.onclick = () => { $('#goal').value = ex; $('#goal').focus(); };
+  $('#chips').append(b);
+}
+$('#goal').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); start(); } });
+$('#go').onclick = () => start();
+$('#reset').onclick = () => location.reload();
+
+let RUN = {streamId: null, goal: '', choices: {provider:'boat', ranking:'sie', memory:'cognee'}, quote: null, busy: false};
+
+async function start(choices) {
+  if (RUN.busy) return;
+  const goal = ($('#goal').value.trim() || EXAMPLES[0]);
+  RUN.goal = goal; RUN.busy = true;
+  if (choices) RUN.choices = {...RUN.choices, ...choices};
+  $('#go').innerHTML = '<span class="ring" style="background:conic-gradient(#0B0C0E 0 25%,transparent 25%)"></span>';
+  await sleep(reduced ? 0 : 250);
+  $('#hero').classList.add('hidden');
+  $('#taskText').textContent = goal; $('#taskCard').classList.remove('hidden');
+  ['#stream', '#choices', '#quote', '#receipt'].forEach(s => $(s).innerHTML = '');
+  setStreamState('streaming');
+  RUN.streamId = await sse('/api/run', {goal, choices: RUN.choices}, onRunEvent);
+  RUN.busy = false; setStreamState('done'); loadSpend();
+}
+
+/* ---------------- agent stream ---------------- */
+const STEP_META = {
+  parse:  {tile:'PA', bg:'#2a2f37', fg:'#E8EAED', name:'Parse goal'},
+  memory: {tile:'CG', bg:'#6D28D9', fg:'#fff', name:'Cognee memory'},
+  search: {tile:'CX', bg:'#0EA5E9', fg:'#fff', name:'context.dev search', radar:true},
+  rank:   {tile:'SL', bg:'#EC4899', fg:'#fff', name:'Superlinked SIE'},
+  license:{tile:'LC', bg:'#34D399', fg:'#0B0C0E', name:'License check'},
+  ingest: {tile:'AB', bg:'#615EFF', fg:'#fff', name:'Airbyte → training_rows'},
+  jarvis: {tile:'JL', bg:'#F97316', fg:'#fff', name:'JarvisLabs L4 price'},
+  quote:  {tile:'₹',  bg:'#FFB224', fg:'#0B0C0E', name:'Quote'},
+};
+let stagger = 0;
+function rowFor(id) { return document.getElementById('step-' + id); }
+function addRow(id, title) {
+  const m = STEP_META[id] || {tile: id.slice(0,2).toUpperCase(), bg:'#2a2f37', fg:'#fff', name:title};
+  const row = h(`<details id="step-${id}" class="panel enter" style="animation-delay:${(stagger++ % 4) * 60}ms">
+    <summary class="flex items-center gap-3 px-3 py-2.5">
+      <div class="tile" style="background:${m.bg};color:${m.fg}">${m.tile}</div>
+      <div class="flex-1 min-w-0"><div class="text-sm font-medium">${esc(m.name)}</div>
+        <div class="lbl text-xs text-mute truncate mono">working…</div></div>
+      <span class="ms mono text-[11px] text-mute"></span>
+      <div class="st">${m.radar ? '<div class="radar"></div>' : '<div class="ring"></div>'}</div>
+    </summary>
+    <div class="body px-3 pb-3 pt-1 text-sm"></div>
+  </details>`);
+  $('#stream').append(row);
+  return row;
+}
+function doneRow(d) {
+  const row = rowFor(d.id); if (!row) return;
+  const tone = d.status === 'ok' ? ['#34D399', '✓'] : d.status === 'off' ? ['#8A9099', '–'] : ['#F87171', '!'];
+  row.querySelector('.st').innerHTML = `<div class="check" style="background:${tone[0]}22;color:${tone[0]};border:1px solid ${tone[0]}">${tone[1]}</div>`;
+  row.querySelector('.tile').classList.toggle('lit', d.status === 'ok');
+  const lbl = row.querySelector('.lbl'); lbl.textContent = d.label || '';
+  if (d.status === 'off') lbl.innerHTML = `<span class="px-1.5 rounded bg-line text-mute">flag off</span> ${esc(d.label || '')}`;
+  row.querySelector('.ms').textContent = d.ms != null ? `${d.ms}ms` : '';
+  if (d.detail && !row.querySelector('.body').childElementCount)
+    row.querySelector('.body').append(h(`<pre class="mono text-[11px] text-mute whitespace-pre-wrap">${esc(JSON.stringify(d.detail, null, 2))}</pre>`));
+}
+const body = id => rowFor(id)?.querySelector('.body');
+
+async function onRunEvent(ev, d) {
+  switch (ev) {
+    case 'run': RUN.streamId = d.stream_id; break;
+    case 'step_start': addRow(d.id, d.title); break;
+    case 'step_done': doneRow(d); break;
+    case 'memory_hit': {
+      const row = rowFor('memory'); row.open = true;
+      const lesson = (d.lesson || '').replace(/\*\*/g, '');
+      body('memory').append(h(`<div class="enter">
+        <div class="inline-flex items-center gap-2 text-xs px-2 py-1 rounded-full border border-[#6D28D9] text-[#c4b5fd] mb-2"><span class="sparkle">recalled · ${esc(d.label)}</span></div>
+        <blockquote class="border-l-2 border-accent pl-3 text-ink/90">${esc(lesson).replace(/1\.84×/g, '<b class="text-accent mono">1.84×</b>')}</blockquote></div>`));
+      break; }
+    case 'search_results': {
+      const b = body('search'); rowFor('search').open = true;
+      if (!d.results.length) { b.append(h(`<div class="text-mute text-xs">${esc(d.label)}</div>`)); break; }
+      d.results.forEach((r, i) => b.append(h(`<a href="${esc(r.url)}" target="_blank" rel="noopener" class="enter flex items-center gap-3 py-1.5 hover:text-accent" style="animation-delay:${i*60}ms">
+        <span class="mono text-[11px] text-mute w-4">${r.rank}</span>
+        <span class="flex-1 truncate text-sm">${esc(r.title || r.url)}</span>
+        <span class="w-24 h-1.5 rounded-full bg-line overflow-hidden"><span class="bar block h-full bg-[#0EA5E9]" style="width:0" data-w="${Math.round(r.relevance*100)}%"></span></span></a>`)));
+      b.append(h(`<div class="text-[11px] text-mute mt-1">bar = ${esc(d.relevance_label)}</div>`));
+      requestAnimationFrame(() => requestAnimationFrame(() => b.querySelectorAll('.bar').forEach(x => x.style.width = x.dataset.w)));
+      break; }
+    case 'license_verdicts': {
+      const b = body('license'); rowFor('license').open = true;
+      const grid = h(`<div class="grid grid-cols-3 gap-2"></div>`); b.append(grid);
+      const tone = {ok:['#34D399','✓'], warn:['#FBBF24','✗'], off:['#8A9099','✗']};
+      d.verdicts.forEach((v, i) => {
+        const [c, mark] = tone[v.tone];
+        grid.append(h(`<div class="relative rounded-lg border p-3 enter" style="border-color:${c}55;animation-delay:${i*60}ms">
+          <div class="mono text-[11px] text-mute truncate">${esc(v.id)}</div>
+          <div class="text-xs mt-1" style="color:${c}">${esc(v.reason)}</div>
+          <div class="stamp absolute right-2 bottom-2 mono text-[11px] font-semibold px-1.5 border-2 rounded" style="color:${c};border-color:${c};animation-delay:${300+i*160}ms">${mark} ${v.verdict}</div>
+          <div class="h-5"></div></div>`));
+      });
+      b.append(h(`<div class="text-[11px] text-mute mt-2">${esc(d.label)}</div>`));
+      break; }
+    case 'ingest_progress': {
+      const b = body('ingest'); rowFor('ingest').open = true;
+      const el = h(`<div><div class="flex justify-between text-xs mb-1"><span class="mono"><span class="n">0</span> / ${d.total.toLocaleString()} rows</span><span class="text-mute">${esc(d.label)} · ${esc(d.backend)}</span></div>
+        <div class="h-2 rounded-full bg-line overflow-hidden"><div class="bar h-full bg-[#615EFF]" style="width:0"></div></div>
+        <div class="mono text-[11px] text-mute mt-2 truncate">${esc(d.lineage)}</div></div>`);
+      b.append(el);
+      countTo(el.querySelector('.n'), 0, d.done, {ms: 900, fmt: v => Math.round(v).toLocaleString()});
+      requestAnimationFrame(() => requestAnimationFrame(() => el.querySelector('.bar').style.width = d.total ? '100%' : '0'));
+      break; }
+    case 'quote': RUN.quote = d; jarvisTicker(d); break;
+    case 'choices_required': renderChoices(d); break;
+    case 'card': RUN.card = d; renderQuote(); break;
+    case 'error': {
+      $('#stream').append(h(`<div class="enter panel px-3 py-2 text-sm text-bad border-bad/50">⚠ ${esc(d.id ? d.id + ': ' : '')}${esc(d.error)}</div>`));
+      break; }
+  }
+}
+function jarvisTicker(q) {
+  const b = body('jarvis'); if (!b) return; rowFor('jarvis').open = true;
+  const el = h(`<div class="flex items-baseline gap-3"><span class="mono text-2xl text-[#F97316] v">₹0.00</span><span class="text-xs text-mute">/hr · L4 on-demand · ${esc(q.rate_source)}</span></div>`);
+  b.append(el); countTo(el.querySelector('.v'), 0, q.live_l4_inr_per_hr, {fmt: v => '₹' + v.toFixed(2)});
+}
+
+/* ---------------- choices ---------------- */
+function renderChoices(d) {
+  const wrap = $('#choices'); wrap.innerHTML = '';
+  const box = h(`<div class="panel p-4 enter"><div class="flex items-center justify-between mb-3"><div class="font-medium">Choose the stack</div><span class="text-xs text-mute">greyed = not wired / flag off</span></div></div>`);
+  for (const g of d.groups) {
+    if (!g.options.some(o => o.available && o.id === RUN.choices[g.key])) RUN.choices[g.key] = (g.options.find(o => o.available) || {}).id;
+    const row = h(`<div class="mb-3"><div class="text-xs text-mute mb-1.5">${esc(g.title)}</div><div class="grid grid-cols-3 gap-2"></div></div>`);
+    const grid = row.lastChild;
+    for (const o of g.options) {
+      const sel = RUN.choices[g.key] === o.id;
+      const t = h(`<button ${o.available ? '' : 'disabled'} class="opt press relative text-left rounded-lg p-3 ${o.available ? '' : 'disabled'} ${sel && o.available ? 'sel' : ''}">
+        <div class="text-sm font-medium">${esc(o.label)}</div><div class="text-[11px] text-mute mono">${esc(o.sub)}</div>
+        <div class="text-[10px] text-mute mt-1">${esc(o.note)}</div>
+        <span class="ck absolute right-2 top-2 text-accent text-xs ${sel && o.available ? '' : 'hidden'}">✓</span></button>`);
+      t.onclick = () => { if (!o.available) return; RUN.choices[g.key] = o.id;
+        grid.querySelectorAll('.opt').forEach(x => { x.classList.remove('sel'); x.querySelector('.ck').classList.add('hidden'); });
+        t.classList.add('sel'); t.querySelector('.ck').classList.remove('hidden'); };
+      grid.append(t);
+    }
+    box.append(row);
+  }
+  const rerun = h(`<button class="press text-xs border border-line rounded-md px-3 py-1.5 hover:border-accent">re-run with these choices</button>`);
+  rerun.onclick = () => start(RUN.choices);
+  box.append(h('<div class="flex justify-end"></div>')); box.lastChild.append(rerun);
+  wrap.append(box);
+}
+
+/* ---------------- quote + approve ---------------- */
+function renderQuote() {
+  const q = RUN.quote; if (!q) return;
+  const [lo, hi] = q.predicted_range_inr; const cap = q.budget_cap_inr;
+  const pct = v => Math.min(100, v / cap * 100);
+  const lessonNote = (RUN.card.lessons || [])[0] || '';
+  const el = h(`<div class="panel p-5 scale-in relative overflow-hidden">
+    <div class="flex items-start justify-between mb-4">
+      <div><div class="text-xs text-mute">quote · ${esc(q.base_model)}</div><div class="text-sm mt-0.5">${esc(q.method)}</div></div>
+      <span class="mono text-[11px] px-2 py-0.5 rounded-full border border-ok text-ok">cap ${inr(cap, 0)}</span>
+    </div>
+    <div class="mono text-sm space-y-1.5">
+      <div class="flex justify-between"><span class="text-mute">dataset</span><span class="text-right">${esc(q.dataset)}</span></div>
+      <div class="flex justify-between"><span class="text-mute">gpu</span><span>${esc(q.gpu)} @ ${inr(q.live_l4_inr_per_hr)}/hr</span></div>
+      <div class="flex justify-between"><span class="text-mute">raw gpu time</span><span>${inr(q.raw_inr)}</span></div>
+      <div class="flex justify-between"><span class="text-mute">multiplier</span><span>${q.multiplier}× ${q.warm_resume ? '<span class="text-ok">warm resume</span>' : '<span class="text-warn">cold start</span>'} <span class="text-mute">(${esc(q.warm_resume_source)})</span></span></div>
+      <div class="flex justify-between text-base pt-2 border-t border-line"><span>predicted</span><span class="text-accent pv">₹0.0</span></div>
+    </div>
+    <div class="mt-4"><div class="relative h-2 rounded-full bg-line">
+      <div class="bar absolute h-full rounded-full bg-accent/70" style="left:${pct(lo)}%;width:0" data-w="${pct(hi) - pct(lo)}%"></div></div>
+      <div class="flex justify-between mono text-[11px] text-mute mt-1"><span>₹0</span><span>range ${inr(lo,1)}–${inr(hi,1)}</span><span>${inr(cap,0)}</span></div></div>
+    <p class="text-xs text-mute mt-4 border-l-2 border-[#6D28D9] pl-2">memory: ${esc(lessonNote.replace(/\*\*/g, '').replace(/^#+\s*/, ''))}</p>
+    <div class="mt-5 flex items-center gap-3">
+      <button id="approve" class="press glow px-5 h-11 rounded-lg bg-accent text-bg font-semibold">APPROVE</button>
+      <span class="text-xs text-mute">replays the real M3 run from the audit log — no GPU is created</span>
+    </div>
+  </div>`);
+  $('#quote').innerHTML = ''; $('#quote').append(el);
+  countTo(el.querySelector('.pv'), 0, q.predicted_inr, {fmt: v => '₹' + v.toFixed(1)});
+  requestAnimationFrame(() => requestAnimationFrame(() => { const b = el.querySelector('.bar'); b.style.width = b.dataset.w; }));
+  el.querySelector('#approve').onclick = approve;
+  el.scrollIntoView({behavior: reduced ? 'auto' : 'smooth', block: 'start'});
+}
+
+async function approve() {
+  const btn = $('#approve'); if (btn.disabled) return; btn.disabled = true; btn.classList.remove('glow');
+  btn.innerHTML = '<span class="ring inline-block align-middle" style="background:conic-gradient(#0B0C0E 0 25%,transparent 25%)"></span>';
+  const quote = $('#quote > div');
+  quote.append(h(`<div class="stamp absolute right-6 bottom-5 mono text-2xl font-bold px-3 py-1 border-4 rounded-md text-ok border-ok" style="animation-delay:100ms">PURCHASED<div class="text-[10px] font-normal text-center">REPLAY</div></div>`));
+  const wrap = $('#receipt'); wrap.innerHTML = '';
+  const r = h(`<div class="panel p-5 enter"><div class="flex justify-between items-center mb-3"><div class="font-medium">Receipt</div>
+    <span class="mono text-[11px] px-2 py-0.5 rounded bg-line text-warn">REPLAY · r_fc806936</span></div>
+    <ol class="lines mono text-xs space-y-1"></ol><div class="sum"></div></div>`);
+  wrap.append(r);
+  const lines = r.querySelector('.lines');
+  let i = 0;
+  await sse('/api/approve', {run_id: RUN.streamId, goal: RUN.goal}, async (ev, d) => {
+    if (ev === 'receipt') {
+      const p = d.payload || {};
+      const extra = d.cost_inr != null ? inr(d.cost_inr) : d.wer != null ? `WER ${(d.wer*100).toFixed(2)}%` : (p.gpu || p.dataset || p.n || '');
+      lines.append(h(`<li class="enter flex gap-3" style="animation-delay:${(i++%3)*60}ms"><span class="text-mute">${esc((d.ts||'').replace('T',' ').slice(0,19))}</span>
+        <span class="flex-1">${esc(d.event)}</span><span class="text-mute">${esc(extra)}</span></li>`));
+    } else if (ev === 'receipt_done') {
+      btn.textContent = 'APPROVED'; btn.classList.add('opacity-60');
+      const zero = d.running_gpus === 0;
+      const s = h(`<div class="grid grid-cols-3 gap-3 mt-5">
+        <div class="rounded-lg border border-line p-3"><div class="text-[11px] text-mute">cost · predicted → actual</div><div class="mono text-xl c">₹9.90</div></div>
+        <div class="rounded-lg border border-line p-3"><div class="text-[11px] text-mute">held-out WER</div><div class="mono text-xl w text-ok">7.83%</div></div>
+        <div class="rounded-lg border p-3 ${zero ? 'border-ok' : 'border-line'}"><div class="text-[11px] text-mute">${esc(d.running_source)}</div>
+          <div class="mono text-lg flex items-center gap-2">${d.running_gpus ?? '?'} GPUs running ${zero ? '<span class="pulse-dot on text-ok" style="background:#34D399"></span>' : ''}</div></div>
+      </div>`);
+      r.querySelector('.sum').append(s);
+      await sleep(200);
+      countTo(s.querySelector('.c'), d.predicted_inr, d.actual_inr, {ms: 900, fmt: v => '₹' + v.toFixed(2)});
+      countTo(s.querySelector('.w'), d.wer_before*100, d.wer_after*100, {ms: 900, fmt: v => v.toFixed(2) + '%'});
+      const cta = h(`<div class="flex gap-2 mt-4"><button class="press text-sm px-3 py-2 rounded-lg border border-line hover:border-accent" data-go="whisper">Hear the difference →</button>
+        <button class="press text-sm px-3 py-2 rounded-lg border border-line hover:border-accent" data-go="audit">Open audit trail →</button></div>`);
+      cta.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
+      r.append(cta);
+      loadSpend(); loadStatus();
+    } else if (ev === 'error') {
+      lines.append(h(`<li class="text-bad">⚠ ${esc(d.error)}</li>`));
+    }
+  });
+}
+
+/* ---------------- views + drawers ---------------- */
+function show(v) {
+  for (const x of ['run', 'whisper', 'audit']) $('#view-' + x).classList.toggle('hidden', x !== v);
+  document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('act', b.dataset.view === v));
+  if (v === 'audit') loadAudit();
+  window.scrollTo({top: 0});
+}
+document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => show(b.dataset.view));
+show('run');
+
+let openDrawer = null;
+document.querySelectorAll('[data-drawer]').forEach(b => b.onclick = () => toggleDrawer(b.dataset.drawer));
+$('#drawerClose').onclick = () => toggleDrawer(null);
+function toggleDrawer(k) {
+  if (k === openDrawer || !k) { $('#drawer').classList.remove('open'); openDrawer = null; return; }
+  openDrawer = k; $('#drawer').classList.add('open');
+  ({amp: drawAmp, mem: drawMem, int: drawInt, aud: drawAud})[k]();
+}
+
+async function drawAmp() {
+  $('#drawerTitle').textContent = 'Amplitude'; const b = $('#drawerBody');
+  b.innerHTML = '<div class="shimmer h-24 mb-3"></div><div class="shimmer h-24"></div>';
+  await loadSpend(); const s = SPEND; if (!s) return;
+  b.innerHTML = `<div class="flex items-center justify-between mb-4"><span class="text-[11px] px-2 py-0.5 rounded-full border ${s.amplitude.enabled ? 'border-ok text-ok' : 'border-line text-mute'}">${esc(s.amplitude.label)}</span>
+    <a class="text-xs text-accent hover:underline" href="${s.amplitude.url}" target="_blank" rel="noopener">open ↗</a></div>
+    <div class="text-[11px] text-mute mb-4 mono">source: ${esc(s.source)}</div>`;
+  const chart = (title, rows) => {
+    const max = Math.max(1, ...rows.map(r => r.v));
+    const c = h(`<div class="mb-6"><div class="text-xs font-medium mb-2">${esc(title)}</div><div class="space-y-1.5"></div></div>`);
+    rows.forEach(r => c.lastChild.append(h(`<div class="flex items-center gap-2 text-[11px]"><span class="w-28 truncate text-mute">${esc(r.k)}</span>
+      <span class="flex-1 h-3 bg-line rounded overflow-hidden"><span class="bar block h-full" style="width:0;background:${r.c || '#FFB224'}" data-w="${r.v/max*100}%"></span></span>
+      <span class="mono w-12 text-right">${esc(r.label ?? r.v)}</span></div>`)));
+    b.append(c);
+  };
+  chart('Predicted vs actual ₹ by run', s.runs.flatMap(r => [
+    {k: `${r.phase} predicted`, v: r.predicted_inr || 0, label: inr(r.predicted_inr), c: '#8A9099'},
+    {k: `${r.phase} actual`, v: r.actual_inr || 0, label: inr(r.actual_inr), c: '#FFB224'}]));
+  chart('M3 funnel (events)', s.funnel.map(f => ({k: f.event, v: f.count, c: '#34D399'})));
+  chart('Tool calls', s.tools.map(t => ({k: t.tool, v: t.count, c: '#0EA5E9'})));
+  requestAnimationFrame(() => requestAnimationFrame(() => b.querySelectorAll('.bar').forEach(x => x.style.width = x.dataset.w)));
+}
+
+function drawMem() {
+  $('#drawerTitle').textContent = 'Memory'; const b = $('#drawerBody');
+  b.innerHTML = `<div class="panel p-2 flex gap-2 mb-3"><input id="mq" class="flex-1 bg-transparent text-sm px-1" placeholder="Ask the agent's memory…" />
+    <button id="mgo" class="press text-xs px-2 rounded bg-accent text-bg font-semibold">ask</button></div>
+    <div id="mchips" class="flex flex-wrap gap-1.5 mb-4"></div><div id="mans" class="space-y-2"></div>`;
+  ['GPU cost estimation', 'which datasets are license-safe?', 'why not ssh from the laptop?', 'warm resume'].forEach(q => {
+    const c = h(`<button class="press text-[11px] px-2 py-1 rounded-full border border-[#6D28D9] text-[#c4b5fd]">✦ ${esc(q)}</button>`);
+    c.onclick = () => { $('#mq').value = q; ask(); }; $('#mchips').append(c);
+  });
+  const ask = async () => {
+    const a = $('#mans'); a.innerHTML = '<div class="shimmer h-16"></div><div class="shimmer h-16"></div>';
+    try {
+      const r = await (await fetch('/api/memory', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({q: $('#mq').value})})).json();
+      a.innerHTML = `<div class="text-[11px] text-mute mono">source: ${esc(r.source)}</div>`;
+      r.hits.forEach((x, i) => a.append(h(`<div class="enter text-xs border-l-2 border-[#6D28D9] pl-2 text-ink/90" style="animation-delay:${i*60}ms">${esc(x.replace(/\*\*/g, ''))}</div>`)));
+    } catch (e) { a.innerHTML = `<div class="text-bad text-xs">${esc(e)}</div>`; }
+  };
+  $('#mgo').onclick = ask; $('#mq').onkeydown = e => { if (e.key === 'Enter') ask(); };
+}
+
+async function drawInt() {
+  $('#drawerTitle').textContent = 'Integrations'; const b = $('#drawerBody');
+  await loadStatus(); if (!STATUS) return;
+  b.innerHTML = '<div class="grid grid-cols-2 gap-2"></div>';
+  STATUS.tiles.forEach((t, i) => {
+    const col = t.live ? '#34D399' : t.on ? '#FBBF24' : '#5b616b';
+    b.firstChild.append(h(`<div class="enter rounded-lg border border-line p-3" style="animation-delay:${i*60}ms">
+      <div class="flex items-center gap-2"><span class="pulse-dot ${t.live ? 'on' : ''}" style="background:${col};color:${col}"></span><span class="text-sm font-medium">${esc(t.name)}</span></div>
+      <div class="text-[11px] text-mute mt-1">${esc(t.live ? 'live' : t.on ? 'on · degraded' : 'flag off')}</div>
+      <div class="text-[11px] text-mute mono truncate" title="${esc(t.note)}">${esc(t.note)}</div></div>`));
+  });
+  const j = STATUS.jarvis || {};
+  b.append(h(`<div class="mono text-[11px] text-mute mt-4 space-y-1">
+    <div>budget cap: ${inr(STATUS.budget_cap_inr, 0)} · warm resume: ${STATUS.warm_resume_enabled} (${esc(STATUS.statsig_source)})</div>
+    <div>jarvis grants: ${j.grants_inr != null ? inr(j.grants_inr) : '—'} · L4 ${inr(j.l4_inr_per_hr)}/hr</div>
+    <div>audit backend: ${esc(STATUS.audit_backend)}</div><div>checked ${esc(j.checked_at || '')}</div></div>`));
+}
+
+async function drawAud() {
+  $('#drawerTitle').textContent = 'Audit stream'; const b = $('#drawerBody');
+  b.innerHTML = '<div class="shimmer h-40"></div>';
+  const a = await (await fetch('/api/audit')).json();
+  b.innerHTML = `<div class="mono text-[11px] text-mute mb-3">${esc(a.lineage)}</div>`;
+  a.events.slice(-14).reverse().forEach((e, i) => b.append(h(`<div class="enter mono text-[11px] flex gap-2 py-1 border-b border-line" style="animation-delay:${i*40}ms">
+    <span class="text-mute">${esc((e.ts||'').slice(11,19))}</span><span class="flex-1">${esc(e.event)}</span><span>${e.cost_inr != null ? inr(e.cost_inr) : ''}</span></div>`)));
+  const btn = h('<button class="press mt-3 text-xs text-accent">open full audit →</button>'); btn.onclick = () => { toggleDrawer(null); show('audit'); }; b.append(btn);
+}
+
+/* ---------------- audit view ---------------- */
+let AUDIT = null;
+async function loadAudit() {
+  $('#timeline').innerHTML = '<div class="shimmer h-40 ml-4"></div>';
+  AUDIT = await (await fetch('/api/audit')).json();
+  $('#lineage').textContent = AUDIT.lineage;
+  const rc = AUDIT.receipt;
+  $('#auditReceipt').innerHTML = `<div class="grid grid-cols-4 gap-3">
+    <div><div class="text-[11px] text-mute">run</div>${esc(rc.run_id)}</div>
+    <div><div class="text-[11px] text-mute">₹ predicted → actual</div>${inr(rc.predicted_inr)} → <span class="text-ok">${inr(rc.actual_inr)}</span></div>
+    <div><div class="text-[11px] text-mute">WER</div>${(rc.wer_before*100).toFixed(2)}% → <span class="text-ok">${(rc.wer_after*100).toFixed(2)}%</span></div>
+    <div><div class="text-[11px] text-mute">backend</div>${esc(AUDIT.backend)}</div></div>`;
+  const tl = $('#timeline'); tl.innerHTML = '';
+  AUDIT.events.forEach((e, i) => {
+    const p = e.payload || {};
+    tl.append(h(`<li class="enter ml-4 mb-3" style="animation-delay:${Math.min(i, 12)*60}ms">
+      <span class="absolute -left-[5px] mt-1.5 w-2.5 h-2.5 rounded-full ${e.event === 'cost_delta' ? 'bg-accent' : 'bg-line border border-mute'}"></span>
+      <details><summary class="mono text-xs flex gap-3"><span class="text-mute">${esc((e.ts||'').replace('T',' ').slice(0,19))}</span>
+        <span class="text-ink">${esc(e.event)}</span>${e.cost_inr != null ? `<span class="text-accent">${inr(e.cost_inr)}</span>` : ''}${e.wer != null ? `<span class="text-ok">WER ${(e.wer*100).toFixed(2)}%</span>` : ''}</summary>
+        <pre class="mono text-[11px] text-mute whitespace-pre-wrap mt-1">${esc(JSON.stringify(p, null, 2))}</pre></details></li>`));
+  });
+}
+$('#copyReceipt').onclick = async () => {
+  if (!AUDIT) await loadAudit();
+  const rc = AUDIT.receipt;
+  const txt = [`vibetuning receipt — ${rc.run_id}`, AUDIT.lineage, `predicted ₹${rc.predicted_inr} → actual ₹${rc.actual_inr}`,
+    `WER ${(rc.wer_before*100).toFixed(2)}% → ${(rc.wer_after*100).toFixed(2)}%`, `audit backend: ${AUDIT.backend}`, '',
+    ...AUDIT.events.map(e => `${e.ts}  ${e.event}${e.cost_inr != null ? '  ₹' + e.cost_inr : ''}`)].join('\n');
+  try { await navigator.clipboard.writeText(txt); $('#copyReceipt').textContent = 'copied ✓'; }
+  catch { $('#copyReceipt').textContent = 'copy blocked'; }
+  setTimeout(() => $('#copyReceipt').textContent = 'copy receipt', 1500);
+};
+
+/* ---------------- whisper ---------------- */
+let mediaRec = null, chunks = [], actx = null, analyser = null, liveRaf = 0;
+const liveCv = $('#live');
+function fitCanvas(cv) { const r = cv.getBoundingClientRect(); cv.width = r.width * devicePixelRatio; cv.height = r.height * devicePixelRatio; return cv.getContext('2d'); }
+function drawLive() {
+  const ctx = fitCanvas(liveCv); const data = new Uint8Array(analyser.fftSize);
+  const loop = () => {
+    analyser.getByteTimeDomainData(data);
+    ctx.clearRect(0, 0, liveCv.width, liveCv.height); ctx.strokeStyle = '#FFB224'; ctx.lineWidth = 2 * devicePixelRatio; ctx.beginPath();
+    for (let i = 0; i < data.length; i++) { const x = i / data.length * liveCv.width, y = data[i] / 255 * liveCv.height; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke(); liveRaf = requestAnimationFrame(loop);
+  };
+  loop();
+}
+async function drawWave(cv, blob, color) {
+  const ctx = fitCanvas(cv);
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const buf = await ac.decodeAudioData(await blob.arrayBuffer()); const ch = buf.getChannelData(0);
+    const bars = Math.floor(cv.width / (4 * devicePixelRatio)), step = Math.floor(ch.length / bars);
+    ctx.clearRect(0, 0, cv.width, cv.height); ctx.fillStyle = color;
+    for (let i = 0; i < bars; i++) { let m = 0; for (let j = 0; j < step; j++) m = Math.max(m, Math.abs(ch[i*step + j] || 0));
+      const bh = Math.max(2, m * cv.height); ctx.fillRect(i * 4 * devicePixelRatio, (cv.height - bh) / 2, 2.5 * devicePixelRatio, bh); }
+    ac.close();
+  } catch (e) { ctx.fillStyle = '#8A9099'; ctx.font = `${11*devicePixelRatio}px JetBrains Mono`; ctx.fillText('waveform preview unavailable', 4, cv.height / 2); }
+}
+$('#mic').onclick = async () => {
+  if (mediaRec && mediaRec.state === 'recording') { mediaRec.stop(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+    actx = new AudioContext(); analyser = actx.createAnalyser(); analyser.fftSize = 1024;
+    actx.createMediaStreamSource(stream).connect(analyser); drawLive();
+    chunks = []; mediaRec = new MediaRecorder(stream);
+    mediaRec.ondataavailable = e => chunks.push(e.data);
+    mediaRec.onstop = () => { cancelAnimationFrame(liveRaf); stream.getTracks().forEach(t => t.stop()); actx.close();
+      $('#mic').textContent = '●'; $('#mic').classList.remove('bg-bad'); $('#micState').textContent = 'processing';
+      transcribe(new Blob(chunks, {type: mediaRec.mimeType || 'audio/webm'}), 'mic.webm'); };
+    mediaRec.start(); $('#mic').textContent = '■'; $('#mic').classList.add('bg-bad'); $('#micState').textContent = 'LIVE · recording — whisper a sentence, click ■ to stop';
+  } catch (e) { $('#micState').textContent = 'mic blocked: ' + e.message; }
+};
+$('#file').onchange = e => { const f = e.target.files[0]; if (f) transcribe(f, f.name); };
+$('#gpuToggle').onchange = e => {
+  const on = e.target.checked; $('#gpuBadge').classList.toggle('hidden', !on);
+  const note = $('#gpuNote'); note.classList.toggle('hidden', !on);
+  note.textContent = STATUS?.whisper_gpu_fallback ? 'server flag WHISPER_GPU_FALLBACK is on — slow CPU clips may use a capped GPU.'
+    : 'server flag WHISPER_GPU_FALLBACK is off — this demo stays on CPU; no GPU will be created.';
+};
+
+function diffWords(a, b) {
+  const A = a.split(/\s+/).filter(Boolean), B = b.split(/\s+/).filter(Boolean), norm = w => w.toLowerCase().replace(/[^\w']/g, '');
+  const dp = Array.from({length: A.length + 1}, () => new Array(B.length + 1).fill(0));
+  for (let i = A.length - 1; i >= 0; i--) for (let j = B.length - 1; j >= 0; j--)
+    dp[i][j] = norm(A[i]) === norm(B[j]) ? dp[i+1][j+1] + 1 : Math.max(dp[i+1][j], dp[i][j+1]);
+  const ra = [], rb = []; let i = 0, j = 0;
+  while (i < A.length && j < B.length) {
+    if (norm(A[i]) === norm(B[j])) { ra.push([A[i], 0]); rb.push([B[j], 0]); i++; j++; }
+    else if (dp[i+1][j] >= dp[i][j+1]) ra.push([A[i++], 1]); else rb.push([B[j++], 1]);
+  }
+  while (i < A.length) ra.push([A[i++], 1]); while (j < B.length) rb.push([B[j++], 1]);
+  return [ra, rb];
+}
+async function typewrite(el, words, cls) {
+  el.innerHTML = ''; const caret = h('<span class="caret">&nbsp;</span>'); el.append(caret);
+  for (const [w, changed] of words) {
+    const s = document.createElement('span'); s.textContent = w + ' ';
+    if (changed) s.className = cls; el.insertBefore(s, caret); if (!reduced) await sleep(45);
+  }
+  caret.remove();
+}
+async function transcribe(blob, name) {
+  drawWave($('#wBase'), blob, '#8A9099'); drawWave($('#wTuned'), blob, '#FFB224');
+  for (const id of ['#tBase', '#tTuned']) $(id).innerHTML = '<div class="shimmer h-4 mb-2"></div><div class="shimmer h-4 w-2/3"></div>';
+  $('#baseMeta').textContent = $('#tunedMeta').textContent = 'CPU transcribing…'; $('#wNote').textContent = '';
+  const fd = new FormData(); fd.append('file', blob, name);
+  try {
+    const res = await fetch('/api/transcribe', {method: 'POST', body: fd}); const r = await res.json();
+    if (!res.ok || r.error) throw new Error(r.error || res.statusText);
+    const [ra, rb] = diffWords(r.base || '', r.tuned || '');
+    $('#baseMeta').textContent = $('#tunedMeta').textContent = `${r.device} · ${r.sec}s · clip ${r.clip_sec}s`;
+    $('#micState').textContent = 'done';
+    await Promise.all([typewrite($('#tBase'), ra, 'line-through decoration-bad text-bad/90'), typewrite($('#tTuned'), rb, 'text-ok bg-ok/10 rounded px-0.5')]);
+    $('#wNote').textContent = (r.note ? r.note + ' · ' : '') + 'red/green = words that differ between the two models (no reference transcript for live clips).';
+  } catch (e) {
+    $('#tBase').innerHTML = $('#tTuned').innerHTML = `<span class="text-bad text-sm">${esc(e.message)}</span>`;
+    $('#baseMeta').textContent = $('#tunedMeta').textContent = 'error'; $('#micState').textContent = 'error';
+  }
+}
+
+loadStatus(); loadSpend();
+setInterval(loadStatus, 30000);
+</script>
+</body>
+</html>

@@ -78,7 +78,8 @@ python -m venv .venv
 .venv\Scripts\activate   # Windows
 pip install -r requirements-demo.txt
 copy .env.example .env   # paste hackathon keys; flags default safe
-python app.py
+python app.py      # Gradio, :7860
+python server.py   # mission control, :7861
 ```
 
 1. **Vibe-tune** — task sentence → research (context.dev + cognee) → plan/cost with live `jl gpus` ₹ and cold/warm overhead → **APPROVE** replays M3 (no GPU).
@@ -86,6 +87,15 @@ python app.py
 3. **Audit trail** — lineage header + M3 timeline.
 
 Ask memory: *what did we learn about GPU cost estimation?* It should return M1 **1.84×** and M3 warm-resume **₹5.24 vs ₹9.9**.
+
+### Mission control (single page, :7861)
+
+`python server.py` serves `web/index.html`. It's a FastAPI wrapper over the same `agent/*` calls, and the Gradio app stays on :7860 as fallback.
+- `POST /api/run` streams each step over SSE: parse → cognee → context.dev → SIE → license → ingest → jl price → quote. Every step is a real call or is labelled *flag off* / *fallback*.
+- `POST /api/approve` streams the M3 audit rows, labelled **REPLAY**.
+- Streams resume via `GET /api/streams/{id}?after=N`.
+- `/api/spend`, `/api/status`, `/api/audit` and `/api/memory` feed the drawers. `/api/transcribe` feeds the whisper A/B (CPU torch needed).
+- No secrets leave the server.
 
 ## Flags
 
