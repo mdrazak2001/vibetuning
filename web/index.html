@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>vibetuning · mission control</title>
-<meta property="og:title" content="vibetuning — an agent that buys its own fine-tune" />
+<title>tuno · mission control</title>
+<meta property="og:title" content="tuno — an agent that buys its own fine-tune" />
 <meta property="og:description" content="Shops datasets + GPU, checks licenses, quotes with memory of past overruns, and keeps an audit trail from prompt to weights." />
 <meta property="og:image" content="https://raw.githubusercontent.com/mdrazak2001/vibetuning/master/docs/mission-light.png" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563EB'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23fff'/%3E%3C/svg%3E" />
@@ -116,7 +116,7 @@ textarea:focus,input:focus{outline:none}
 </aside>
 
 <header class="fixed left-14 right-0 top-0 h-14 border-b border-line bg-panel/85 backdrop-blur z-20 flex items-center px-5 gap-4">
-  <div class="font-semibold tracking-tight">vibe<span class="text-accent">tuning</span></div>
+  <div class="font-semibold tracking-tight">tu<span class="text-accent">no</span></div>
   <div class="ml-auto flex items-center gap-2 text-xs">
     <div class="flex items-center gap-2 px-3 h-8 rounded-full border border-line bg-panel" data-tip="GPU spend to date · live burn from jl list">
       <span class="text-mute">GPU</span><span id="burn" class="mono text-ink">₹—</span>
@@ -155,6 +155,42 @@ textarea:focus,input:focus{outline:none}
         </div>
       </div>
       <div class="flex flex-wrap justify-center gap-2 mt-5" id="chips"></div>
+    </div>
+
+    <div id="livePanel" class="mx-auto max-w-4xl px-5 py-6">
+      <div class="panel p-5">
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+          <div id="liveLogos" class="flex gap-1.5"></div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold leading-snug">Live training · whisper-small LoRA SFT on JarvisLabs L4</div>
+            <div class="text-[11px] text-mute">one warm-resumed L4 · paused on finish</div>
+          </div>
+          <span id="livePill" class="mono text-[11px] px-2 py-0.5 rounded-full border border-line inline-flex items-center gap-1.5">
+            <span id="liveDot" class="pulse-dot"></span>
+            <span id="livePillText">idle</span>
+          </span>
+          <button id="liveDispatch" type="button" class="press btn-primary text-xs px-3 h-8" data-tip="one warm-resumed L4, paused on finish">Dispatch run</button>
+        </div>
+        <div id="liveMeta" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs mb-3">
+          <span class="mono">elapsed <span id="liveElapsed">00:00</span></span>
+          <span class="mono">est <span id="liveCost">₹—</span> <span id="liveRate" class="text-mute">₹0.00/hr</span></span>
+          <span class="mono" id="liveEpoch">epoch — / 3</span>
+        </div>
+        <div id="liveIdle" class="hidden text-sm text-mute py-8 text-center">No live run yet</div>
+        <div id="liveWait" class="hidden text-sm text-mute py-8 text-center">waiting for first logged step…</div>
+        <div id="liveCharts" class="hidden grid grid-cols-2 gap-4">
+          <div>
+            <div class="text-[11px] text-mute mb-1">training loss</div>
+            <svg id="liveLoss" class="w-full h-28 block" viewBox="0 0 400 112" role="img" aria-label="training loss vs epoch"></svg>
+          </div>
+          <div>
+            <div class="text-[11px] text-mute mb-1">WER</div>
+            <svg id="liveWer" class="w-full h-28 block" viewBox="0 0 400 112" role="img" aria-label="WER per epoch"></svg>
+          </div>
+        </div>
+        <div id="liveErr" class="hidden text-xs text-bad mt-2"></div>
+        <p class="text-[11px] text-mute mt-4">Points relayed from <span class="mono">jl run logs</span> every 15s by the Boat control plane · mirrored to Amplitude as <span class="mono">live_train_step</span> / <span class="mono">live_epoch_eval</span></p>
+      </div>
     </div>
 
     <div id="flow" class="hidden mx-auto max-w-4xl px-5 pt-6 pb-24 grid grid-cols-[128px_minmax(0,1fr)] gap-6">
@@ -235,6 +271,7 @@ $('#themeBtn').onclick = () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next; try { localStorage.setItem('vt-theme', next); } catch {}
   paintThemeBtn();
+  if (typeof paintLive === 'function') paintLive();
 };
 paintThemeBtn();
 
@@ -310,9 +347,9 @@ $('#stackBtn').onclick = () => toggleDrawer('int');
 
 /* ---------------- hero ---------------- */
 const EXAMPLES = [
-  'Transcribe whispered English better without forgetting normal speech.',
-  'Make ASR robust to ASMR-style soft voices, licence-clean data only.',
-  'Fine-tune a speech model for quiet late-night voice notes under ₹20.',
+  'Teach Whisper to catch whispered English — keep normal speech sharp.',
+  'Make speech-to-text hear soft ASMR voices, licence-clean data only.',
+  'Tune a model for quiet late-night voice notes, all-in under ₹20.',
 ];
 for (const ex of EXAMPLES) {
   const b = h(`<button class="press text-xs px-3 py-1.5 rounded-full border border-line bg-panel text-mute hover:text-ink hover:border-accent/60">${esc(ex)}</button>`);
@@ -641,6 +678,175 @@ async function approve(card) {
   });
 }
 
+/* ---------------- live training ---------------- */
+let LIVE = {state: {}, points: [], active: false, dispatch_enabled: false};
+let liveTimer = null, liveOffline = false;
+
+function fmtMmSs(sec) {
+  const s = Math.max(0, Math.floor(Number(sec) || 0));
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+function liveStateOf() { return (LIVE.state && LIVE.state.state) || ''; }
+function liveHasRun() {
+  const st = LIVE.state || {};
+  return !!(st.id || st.state || st.run_id || st.machine_id);
+}
+function livePollFast() {
+  const s = liveStateOf();
+  return !!(LIVE.active || s === 'starting' || s === 'running');
+}
+function scheduleLivePoll() {
+  clearTimeout(liveTimer);
+  liveTimer = setTimeout(loadLive, livePollFast() ? 3000 : 15000);
+}
+function svgEl(svg, tag, attrs, text) {
+  const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
+  if (text != null) n.textContent = text;
+  svg.appendChild(n);
+  return n;
+}
+function drawLiveChart(svg, pts, yOf, color, extra = {}) {
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const W = Math.max(220, svg.clientWidth || 320);
+  const H = Math.max(96, svg.clientHeight || 112);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const L = 42, R = 12, T = 14, B = 22;
+  const iw = W - L - R, ih = H - T - B;
+  const xs = pts.map(p => Number(p.epoch)).filter(Number.isFinite);
+  const ys = pts.map(yOf).filter(Number.isFinite);
+  if (extra.baseline != null && Number.isFinite(extra.baseline)) ys.push(Number(extra.baseline));
+  if (!ys.length) {
+    svgEl(svg, 'text', {x: W / 2, y: H / 2, 'text-anchor': 'middle', fill: cssRgb('mute'), 'font-size': '11', 'font-family': 'JetBrains Mono, monospace'}, extra.empty || '—');
+    return;
+  }
+  const xMin = xs.length ? Math.min(...xs) : 0;
+  const xMax = xs.length ? Math.max(...xs) : 1;
+  let lo = Math.min(...ys), hi = Math.max(...ys);
+  if (lo === hi) { lo -= Math.abs(lo) * 0.08 || 0.05; hi += Math.abs(hi) * 0.08 || 0.05; }
+  const padY = (hi - lo) * 0.12;
+  lo = Math.max(0, lo - padY); hi += padY;
+  const xSpan = xMax === xMin ? 1 : (xMax - xMin);
+  const X = x => L + ((x - xMin) / xSpan) * iw;
+  const Y = y => T + (1 - (y - lo) / (hi - lo)) * ih;
+  const fmt = extra.fmt || (v => Number(v).toFixed(2));
+  svgEl(svg, 'line', {x1: L, y1: T, x2: L, y2: T + ih, stroke: cssRgb('line'), 'stroke-width': 1});
+  svgEl(svg, 'line', {x1: L, y1: T + ih, x2: L + iw, y2: T + ih, stroke: cssRgb('line'), 'stroke-width': 1});
+  svgEl(svg, 'text', {x: L - 6, y: T + 4, 'text-anchor': 'end', fill: cssRgb('mute'), 'font-size': 9, 'font-family': 'JetBrains Mono, monospace'}, fmt(hi));
+  svgEl(svg, 'text', {x: L - 6, y: T + ih, 'text-anchor': 'end', fill: cssRgb('mute'), 'font-size': 9, 'font-family': 'JetBrains Mono, monospace'}, fmt(lo));
+  svgEl(svg, 'text', {x: L, y: H - 4, fill: cssRgb('mute'), 'font-size': 9, 'font-family': 'JetBrains Mono, monospace'}, Number(xMin).toFixed(1));
+  svgEl(svg, 'text', {x: L + iw, y: H - 4, 'text-anchor': 'end', fill: cssRgb('mute'), 'font-size': 9, 'font-family': 'JetBrains Mono, monospace'}, Number(xMax).toFixed(1));
+  if (extra.baseline != null && Number.isFinite(extra.baseline)) {
+    const by = Y(Number(extra.baseline));
+    svgEl(svg, 'line', {x1: L, y1: by, x2: L + iw, y2: by, stroke: cssRgb('mute'), 'stroke-width': 1.25, 'stroke-dasharray': '4 3'});
+    svgEl(svg, 'text', {x: L + iw - 2, y: by - 4, 'text-anchor': 'end', fill: cssRgb('mute'), 'font-size': 9, 'font-family': 'JetBrains Mono, monospace'}, extra.baselineLabel || 'base');
+  }
+  const usable = pts.filter(p => Number.isFinite(Number(p.epoch)) && Number.isFinite(yOf(p)));
+  if (!usable.length) return;
+  const d = usable.map((p, i) => `${i ? 'L' : 'M'}${X(p.epoch).toFixed(1)},${Y(yOf(p)).toFixed(1)}`).join(' ');
+  const path = svgEl(svg, 'path', {d, fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round'});
+  usable.forEach(p => svgEl(svg, 'circle', {cx: X(p.epoch), cy: Y(yOf(p)), r: 2.4, fill: color}));
+  if (!reduced) {
+    try {
+      const len = path.getTotalLength();
+      path.style.strokeDasharray = String(len);
+      path.style.strokeDashoffset = String(len);
+      path.getBoundingClientRect();
+      path.style.transition = 'stroke-dashoffset 500ms cubic-bezier(0.22,1,0.36,1)';
+      path.style.strokeDashoffset = '0';
+    } catch {}
+  }
+}
+function paintLiveCharts() {
+  const pts = LIVE.points || [];
+  const train = pts.filter(p => p.kind === 'train' && Number.isFinite(Number(p.loss)));
+  const ev = pts.filter(p => p.kind === 'eval' && p.wer != null && Number.isFinite(Number(p.wer)));
+  const base = pts.find(p => p.kind === 'wer' && String(p.split || '').startsWith('base/expresso_val'));
+  const baseline = base && Number.isFinite(Number(base.wer)) ? Number(base.wer) : null;
+  const werVals = ev.map(p => Number(p.wer)).concat(baseline != null ? [baseline] : []);
+  const werPct = werVals.length && Math.max(...werVals) <= 1.5;
+  const werOf = p => werPct ? Number(p.wer) * 100 : Number(p.wer);
+  drawLiveChart($('#liveLoss'), train, p => Number(p.loss), cssRgb('accent'), {empty: 'no train steps yet', fmt: v => Number(v).toFixed(3)});
+  drawLiveChart($('#liveWer'), ev, werOf, cssRgb('ok'), {
+    empty: 'no eval yet',
+    baseline: baseline != null && werPct ? baseline * 100 : baseline,
+    baselineLabel: 'base',
+    fmt: v => werPct ? Number(v).toFixed(1) + '%' : Number(v).toFixed(3),
+  });
+}
+function paintLive() {
+  const st = LIVE.state || {};
+  const pts = LIVE.points || [];
+  const empty = !liveHasRun() && !pts.length;
+  const pill = $('#livePill'), dot = $('#liveDot'), text = $('#livePillText');
+  const state = liveOffline ? 'offline' : (liveStateOf() || (empty ? 'idle' : '—'));
+  const phase = liveOffline ? '' : (st.phase || '');
+  text.textContent = liveOffline ? 'offline' : (phase ? `${state} · ${phase}` : state);
+  const toneKey = liveOffline ? 'mute' : state === 'running' || state === 'starting' ? 'accent' : state === 'complete' ? 'ok' : state === 'failed' ? 'bad' : 'mute';
+  pill.style.color = tone(toneKey);
+  pill.style.borderColor = tone(toneKey);
+  pill.style.background = `rgb(var(--${toneKey}) / .08)`;
+  dot.style.background = tone(toneKey);
+  dot.style.color = tone(toneKey);
+  const live = !liveOffline && (state === 'running' || state === 'starting');
+  dot.classList.toggle('on', live);
+  $('#liveElapsed').textContent = fmtMmSs(st.elapsed);
+  $('#liveCost').textContent = inr(st.est_inr);
+  $('#liveRate').textContent = st.rate != null ? inr(st.rate) + '/hr' : '₹0.00/hr';
+  const lastTrain = [...pts.filter(p => p.kind === 'train' && Number.isFinite(Number(p.epoch)))].pop();
+  $('#liveEpoch').textContent = lastTrain ? `epoch ${Number(lastTrain.epoch).toFixed(1)} / 3` : 'epoch — / 3';
+  const wait = liveHasRun() && !pts.length;
+  $('#liveIdle').classList.toggle('hidden', !empty);
+  $('#liveWait').classList.toggle('hidden', !(!empty && wait));
+  $('#liveCharts').classList.toggle('hidden', empty || wait);
+  $('#liveMeta').classList.toggle('opacity-50', empty);
+  if (!empty && !wait) requestAnimationFrame(() => paintLiveCharts());
+  const btn = $('#liveDispatch');
+  const blocked = !LIVE.dispatch_enabled;
+  const off = blocked || !!LIVE.active;
+  btn.setAttribute('aria-disabled', off ? 'true' : 'false');
+  btn.classList.toggle('opacity-45', off);
+  btn.classList.toggle('cursor-not-allowed', off);
+  btn.dataset.tip = blocked ? 'dispatch disabled on this server' : 'one warm-resumed L4, paused on finish';
+}
+async function loadLive() {
+  try {
+    const r = await fetch('/api/live');
+    if (!r.ok) throw new Error('offline');
+    LIVE = await r.json();
+    if (!LIVE.state) LIVE.state = {};
+    if (!Array.isArray(LIVE.points)) LIVE.points = [];
+    liveOffline = false;
+  } catch {
+    liveOffline = true;
+  }
+  paintLive();
+  scheduleLivePoll();
+}
+async function dispatchLive() {
+  const btn = $('#liveDispatch');
+  if (btn.getAttribute('aria-disabled') === 'true') return;
+  const err = $('#liveErr');
+  err.classList.add('hidden'); err.textContent = '';
+  try {
+    const res = await fetch('/api/live/dispatch', {method: 'POST'});
+    let d = {};
+    try { d = await res.json(); } catch {}
+    if (!res.ok) { err.textContent = d.error || res.statusText || 'dispatch failed'; err.classList.remove('hidden'); return; }
+    liveOffline = false;
+    loadLive();
+  } catch {
+    err.textContent = 'offline'; err.classList.remove('hidden');
+  }
+}
+function initLivePanel() {
+  const logos = $('#liveLogos');
+  logos.append(logoTile('jarvislabs', 'JL', 28, true));
+  logos.append(logoTile('amplitude', 'AM', 28, true));
+  $('#liveDispatch').onclick = dispatchLive;
+  loadLive();
+}
+
 /* ---------------- views + drawers ---------------- */
 function show(v) {
   for (const x of ['run', 'whisper', 'audit']) $('#view-' + x).classList.toggle('hidden', x !== v);
@@ -759,7 +965,7 @@ async function loadAudit() {
 $('#copyReceipt').onclick = async () => {
   if (!AUDIT) await loadAudit();
   const rc = AUDIT.receipt;
-  const txt = [`vibetuning receipt — ${rc.run_id}`, AUDIT.lineage, `predicted ₹${rc.predicted_inr} → actual ₹${rc.actual_inr}`,
+  const txt = [`tuno receipt — ${rc.run_id}`, AUDIT.lineage, `predicted ₹${rc.predicted_inr} → actual ₹${rc.actual_inr}`,
     `WER ${(rc.wer_before*100).toFixed(2)}% → ${(rc.wer_after*100).toFixed(2)}%`, `audit backend: ${AUDIT.backend}`, '',
     ...AUDIT.events.map(e => `${e.ts}  ${e.event}${e.cost_inr != null ? '  ₹' + e.cost_inr : ''}`)].join('\n');
   try { await navigator.clipboard.writeText(txt); $('#copyReceipt').textContent = 'copied ✓'; }
@@ -855,7 +1061,7 @@ async function transcribe(blob, name) {
   }
 }
 
-loadStatus(); loadSpend();
+loadStatus(); loadSpend(); initLivePanel();
 setInterval(loadStatus, 30000);
 </script>
 </body>

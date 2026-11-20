@@ -586,6 +586,48 @@ def api_audit():
                         "machine_id": 580496, "run_id": M3_RUN}}
 
 
+LIVE_DIR = ROOT / "logs" / "live"
+_LIVE_PROC: dict = {"p": None}
+_LIVE_LOCK = threading.Lock()
+
+
+def _live_active() -> bool:
+    p = _LIVE_PROC["p"]
+    if p is not None and p.poll() is None:
+        return True
+    try:
+        st = json.loads((LIVE_DIR / "state.json").read_text())
+        fresh = time.time() - (LIVE_DIR / "state.json").stat().st_mtime < 300
+        return fresh and st.get("state") in {"starting", "running"}
+    except Exception:
+        return False
+
+
+@app.get("/api/live")
+def api_live():
+    state = json.loads((LIVE_DIR / "state.json").read_text()) if (LIVE_DIR / "state.json").exists() else {}
+    points = []
+    if (LIVE_DIR / "metrics.jsonl").exists():
+        points = [json.loads(l) for l in (LIVE_DIR / "metrics.jsonl").read_text().splitlines() if l.strip()]
+    return {"state": state, "points": points, "active": _live_active(),
+            "dispatch_enabled": os.getenv("LIVE_DISPATCH") == "1"}
+
+
+@app.post("/api/live/dispatch")
+def api_live_dispatch():
+    if os.getenv("LIVE_DISPATCH") != "1":
+        return JSONResponse({"error": "dispatch disabled (LIVE_DISPATCH!=1)"}, status_code=403)
+    with _LIVE_LOCK:
+        if _live_active():
+            return JSONResponse({"error": "a live run is already in flight — one GPU at a time"}, status_code=409)
+        LIVE_DIR.mkdir(parents=True, exist_ok=True)
+        out = open(LIVE_DIR / "relay.log", "w")
+        _LIVE_PROC["p"] = subprocess.Popen([sys.executable, "-u", str(ROOT / "scripts" / "live_run.py")],
+                                           cwd=str(ROOT), stdout=out, stderr=subprocess.STDOUT,
+                                           start_new_session=True)
+    return {"ok": True, "pid": _LIVE_PROC["p"].pid}
+
+
 def _decode_16k(path: str) -> np.ndarray:
     proc = subprocess.run(
         ["ffmpeg", "-nostdin", "-loglevel", "error", "-i", path, "-ac", "1", "-ar", "16000", "-f", "f32le", "-"],

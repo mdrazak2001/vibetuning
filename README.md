@@ -1,4 +1,6 @@
-# vibetuning
+# tuno
+
+tuno (repo: vibetuning)
 
 A personal agent that shops for **datasets + GPU compute**, buys a LoRA, and leaves a row for every decision.
 
@@ -103,6 +105,17 @@ The flow moves through phases: hero → research → stack → quote → receipt
 - Streams resume via `GET /api/streams/{id}?after=N`.
 - `/api/spend`, `/api/status`, `/api/audit` and `/api/memory` feed the drawers. `/api/transcribe` feeds the whisper A/B (CPU torch needed).
 - No secrets leave the server.
+
+### Live training
+
+![live training](docs/screenshots/mission-live-training.png)
+
+`POST /api/live/dispatch` (needs `LIVE_DISPATCH=1`) launches `scripts/live_run.py` on the Boat control plane. It refuses to dispatch while another run is in flight.
+- It warm-resumes the paused L4 and never creates a GPU. Hard caps are 20 min and ₹40, and the GPU is paused in `finally`.
+- It re-runs the M3 recipe and reads `jl run logs` every 15 s for loss, epoch WER and phase.
+- Points go to `logs/live/metrics.jsonl`, the audit store, and Amplitude (`live_train_step`, `live_epoch_eval`, `live_wer`). `GET /api/live` feeds the charts.
+
+The first live run took 6:12 and cost about ₹4.26. Expresso-val WER went from a base of 0.0783 to 0.0816, then 0.0695, then 0.0750 across epochs 1–3. The best checkpoint (epoch 2, 0.0695) is kept.
 
 ## Flags
 
