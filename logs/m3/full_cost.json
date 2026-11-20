@@ -1,0 +1,25 @@
+{
+  "job": "m3-full-whisper-small-lora",
+  "gpu": "L4",
+  "spot": false,
+  "region": "IN2",
+  "machine_id": 580496,
+  "run_id": "r_fc806936",
+  "live_l4_inr_per_hr": 41.31,
+  "predicted_inr": 9.9,
+  "predicted_range_inr": [
+    7.4,
+    12.4
+  ],
+  "cap_inr": 150.0,
+  "timeout_sec": 2700,
+  "timeout_ceiling_inr": 30.9825,
+  "grants_before": 49419.43,
+  "grants_after": 49414.19,
+  "actual_inr": 5.24,
+  "elapsed_sec": 442.9,
+  "timed_out": false,
+  "run_exit_code": null,
+  "running_after": [],
+  "m1_calibration_multiplier": 1.84
+}

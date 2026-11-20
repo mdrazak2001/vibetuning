@@ -1,6 +1,6 @@
 {
   "name": "sft_whisper_expresso_small",
-  "status": "probe_done_awaiting_full_run_go",
+  "status": "full_run_done",
   "recipe": "recipes/sft_whisper",
   "base_model": "openai/whisper-small",
   "method": "lora_sft",
@@ -53,6 +53,7 @@
     "spot": false,
     "region": "IN2",
     "reuse_machine_id": 580479,
+    "machine_id": 580496,
     "launch_from": "vibetuner"
   },
   "caps": {
@@ -69,5 +70,22 @@
     "sec_per_eval_clip": 0.1845,
     "metrics": "logs/m3/metrics.json"
   },
-  "estimate_inr_range": [7.4, 12.4]
+  "estimate_inr_range": [7.4, 12.4],
+  "full_run": {
+    "run_id": "r_fc806936",
+    "machine_id": 580496,
+    "epochs": 3,
+    "global_step": 387,
+    "best_checkpoint_step": 258,
+    "best_metric_eval_wer": 0.07166482910694598,
+    "wer_before": {"expresso_val": 0.0782800441014333},
+    "wer_after": {"expresso_val": 0.07166482910694598},
+    "heldout_whisper_n": 0,
+    "heldout_normal_n": 0,
+    "predicted_inr": 9.9,
+    "actual_inr": 5.24,
+    "elapsed_sec": 442.9,
+    "metrics": "logs/m3/full_metrics.json",
+    "adapter": "artifacts/m3/adapter"
+  }
 }

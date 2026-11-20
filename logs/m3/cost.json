@@ -1,6 +1,5 @@
 {
-  "phase": "m3-probe",
-  "full_run_executed": false,
+  "phase": "m3-full",
   "gpu": "L4",
   "spot": false,
   "region": "IN2",
@@ -41,5 +40,26 @@
     "caps_inr": 150,
     "caps_minutes": 45,
     "formula": "fixed_overhead + steps*sec_step + epoch_evals*n_val*sec_eval + 2*(n_val+n_heldout)*sec_eval_heldout; rupee range = calibrated*1.84 then ±25%"
+  },
+  "full_run_executed": true,
+  "full_run_actual": {
+    "run_id": "r_fc806936",
+    "machine_id": 580496,
+    "resumed_from": 580479,
+    "predicted_inr": 9.9,
+    "predicted_range_inr": [7.4, 12.4],
+    "actual_inr": 5.24,
+    "elapsed_sec": 442.9,
+    "script_elapsed_sec": 289.878,
+    "grants_before": 49419.43,
+    "grants_after": 49414.19,
+    "timed_out": false,
+    "running_after": [],
+    "wer_before_expresso_val": 0.0783,
+    "wer_after_expresso_val": 0.0717,
+    "best_checkpoint_step": 258,
+    "global_step": 387,
+    "heldout_whisper_n": 0,
+    "heldout_normal_n": 0
   }
 }

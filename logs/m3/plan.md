@@ -1,8 +1,8 @@
-# M3 plan / cost card — STOPPED for full-run GO
+# M3 plan / cost card — full run executed
 
-Probe is done. **Do not start the full run until a new GO in chat.**
+Probe done, then full-run GO received. Results below; original estimate kept for predicted-vs-actual.
 
-## What we will train (full run — not executed)
+## What we trained (full run)
 
 | Field | Proposal |
 | --- | --- |
@@ -88,4 +88,16 @@ Do **not** treat ₹5.4 as the number you will be billed. M1 billed 1.84× the n
 - This card + `run_spec.json` + probe metrics already committed; full-run metrics follow the GO
 - Hard pause on success/fail/timeout; caps ₹150 / 45 min
 
-**Waiting for GO to execute the full run.**
+## Full run result (GO received, r_fc806936)
+
+| Field | Value |
+| --- | --- |
+| Machine | `580496` (resume of `580479`) |
+| Predicted | ₹9.9 (range ₹7.4–₹12.4) |
+| Actual | **₹5.24** (grants 49419.43 → 49414.19) |
+| WER Expresso val | **0.0783 → 0.0717** (best = epoch 2 / step 258; epoch 3 WER 0.0827 discarded) |
+| Held-out | skipped — `eval_whisper/` and `eval_normal/` empty |
+| Adapter | `artifacts/m3/adapter/` |
+| `jl list` | **0 running** |
+
+M4 (`SKILL.md`) waits on a new GO.

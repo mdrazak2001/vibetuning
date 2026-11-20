@@ -20,3 +20,4 @@ data/expresso_whisper/audio/
 data/expresso_whisper/work/
 data/expresso_whisper/clips.jsonl
 logs/m3/probe_out_boat/
+logs/m3/full_out/

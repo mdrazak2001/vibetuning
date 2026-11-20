@@ -114,7 +114,7 @@ Wavs in `data/samples/`. Full audio stays on vibetuner (`data/expresso_whisper/a
 
 ## M3 — probe (done 2026-11-19, GO for probe only)
 
-On-demand L4 `580479` (`vibetuning-m3-probe`), from vibetuner. 50 steps whisper-small LoRA + 8-clip generate eval. **Full run not started.**
+On-demand L4 `580479` (`vibetuning-m3-probe`), from vibetuner. 50 steps whisper-small LoRA + 8-clip generate eval.
 
 | Probe metric | Value |
 | --- | --- |
@@ -123,7 +123,29 @@ On-demand L4 `580479` (`vibetuning-m3-probe`), from vibetuner. 50 steps whisper-
 | sec/eval-clip | 0.185 s |
 | Probe val WER (normalized, 8 clips) | 0.053 |
 | Live L4 | ₹41.31 / hr |
-| M3 GPU spend | **₹5.26** (includes one failed folder-venv clash); successful slice ₹2.24 |
+| Probe GPU spend | **₹5.26** (includes one failed folder-venv clash); successful slice ₹2.24 |
 | Running after pause | **0** |
 
-Full-run proposal (waiting on GO): 3 epochs, ~385 steps, early stop on val WER, eval base vs tuned on Expresso val + `eval_whisper/` + `eval_normal/`. Estimated **₹7.4–₹12.4** (M1 1.84× calibration, ±25%), well under ₹150 / 45 min. Card: `logs/m3/plan.md`. Spec: `run_spec.json`.
+## M3 — full run (done 2026-11-19, GO received)
+
+On-demand L4 `580496` (resume of paused `580479` / `vibetuning-m3-probe`), from vibetuner. whisper-small LoRA, 3 epochs, 387 steps, early-stop kept **checkpoint-258** (epoch 2). fp16. File-mode `jl run` of `train_m3.py` (`r_fc806936`).
+
+| Field | Value |
+| --- | --- |
+| GPU | On-demand L4 IN2, **not spot** |
+| Live rate | ₹41.31 / hr |
+| Predicted | **₹9.9** (range ₹7.4–₹12.4) |
+| Actual | grants 49419.43 → 49414.19 = **₹5.24** (~$0.06) |
+| Wall | 442.9 s (~7.4 min); script 289.9 s; caps ₹150 / 45 min **not hit** |
+| WER before (Expresso val, 114, English-normalized) | **0.0783** |
+| WER after (best ckpt) | **0.0717** |
+| Epoch eval WER | 1: 0.0794 → 2: **0.0717** → 3: 0.0827 (kept epoch 2) |
+| `eval_whisper/` / `eval_normal/` | skipped (empty; n=0) |
+| Adapter | `artifacts/m3/adapter/` (`adapter_config.json` + gitignored `adapter_model.safetensors`) |
+| Pause | `jl pause 580496` succeeded; `jl list` **0 running** |
+
+`eval_whisper/` and `eval_normal/` still have no user audio, so held-out / forgetting WER was not measured. One in-domain example: base hyp *danza assault* → tuned *dancer assault* (matches ref).
+
+**M3 acceptance:** adapter on disk, base vs tuned WER printed, 0 running, actual **₹5.24** under predicted ₹9.9 and well under ₹150. Metrics: `logs/m3/full_metrics.json`. Cost: `logs/m3/full_cost.json`. Spec: `run_spec.json` (`full_run_done`).
+
+Waiting on GO for M4 (`SKILL.md`).

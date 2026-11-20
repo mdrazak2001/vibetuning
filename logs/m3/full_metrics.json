@@ -1,0 +1,90 @@
+{
+  "base_model": "openai/whisper-small",
+  "method": "lora_sft",
+  "lora_r": 8,
+  "epochs": 3,
+  "batch_size": 8,
+  "n_train": 1025,
+  "n_val": 114,
+  "fp16": true,
+  "wer_before": {
+    "expresso_val": 0.0782800441014333
+  },
+  "wer_after": {
+    "expresso_val": 0.07166482910694598
+  },
+  "wer_before_detail": {
+    "expresso_val": {
+      "wer": 0.0782800441014333,
+      "n": 114,
+      "sec_per_clip": 0.1337,
+      "samples": [
+        {
+          "ref": "Right now in Mumbai it's one degree and clear.",
+          "hyp_norm": "right now in mumbai it s one degree and clear",
+          "ref_norm": "right now in mumbai it s one degree and clear"
+        },
+        {
+          "ref": "These are considered beautiful songs that people love by the way.",
+          "hyp_norm": "these are considered beautiful songs that people love by the way",
+          "ref_norm": "these are considered beautiful songs that people love by the way"
+        },
+        {
+          "ref": "Any news on the dancer assault case?",
+          "hyp_norm": "any news on the danza assault case",
+          "ref_norm": "any news on the dancer assault case"
+        },
+        {
+          "ref": "Okay, bye! See you later. Have a good day!",
+          "hyp_norm": "okay bye see you later have a good day",
+          "ref_norm": "okay bye see you later have a good day"
+        },
+        {
+          "ref": "You have a plan?",
+          "hyp_norm": "you have a plan",
+          "ref_norm": "you have a plan"
+        }
+      ]
+    }
+  },
+  "wer_after_detail": {
+    "expresso_val": {
+      "wer": 0.07166482910694598,
+      "n": 114,
+      "sec_per_clip": 0.1651,
+      "samples": [
+        {
+          "ref": "Right now in Mumbai it's one degree and clear.",
+          "hyp_norm": "right now in mumbai it s one degree and clear",
+          "ref_norm": "right now in mumbai it s one degree and clear"
+        },
+        {
+          "ref": "These are considered beautiful songs that people love by the way.",
+          "hyp_norm": "these are considered beautiful songs that people love by the way",
+          "ref_norm": "these are considered beautiful songs that people love by the way"
+        },
+        {
+          "ref": "Any news on the dancer assault case?",
+          "hyp_norm": "any news on the dancer assault case",
+          "ref_norm": "any news on the dancer assault case"
+        },
+        {
+          "ref": "Okay, bye! See you later. Have a good day!",
+          "hyp_norm": "okay bye see you later have a good day",
+          "ref_norm": "okay bye see you later have a good day"
+        },
+        {
+          "ref": "You have a plan?",
+          "hyp_norm": "you have a plan",
+          "ref_norm": "you have a plan"
+        }
+      ]
+    }
+  },
+  "heldout_whisper_n": 0,
+  "heldout_normal_n": 0,
+  "elapsed_sec": 289.878,
+  "adapter_dir": "/home/outputs/m3/adapter",
+  "best_metric": 0.07166482910694598,
+  "global_step": 387
+}
