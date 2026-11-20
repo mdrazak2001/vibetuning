@@ -90,6 +90,13 @@ Ask memory: *what did we learn about GPU cost estimation?* It should return M1 *
 
 ### Mission control (single page, :7861)
 
+| Light | Dark |
+|---|---|
+| ![hero light](docs/screenshots/mission-light-hero.png) | ![hero dark](docs/screenshots/mission-dark-hero.png) |
+| ![receipt light](docs/screenshots/mission-light-receipt.png) | ![receipt dark](docs/screenshots/mission-dark-receipt.png) |
+
+The flow moves through phases: hero → research → stack → quote → receipt, with one primary action at a time. Finished phases collapse into one-line summaries. The theme toggle persists in `localStorage`, and vendor logos live in `assets/logos/`.
+
 `python server.py` serves `web/index.html`. It's a FastAPI wrapper over the same `agent/*` calls, and the Gradio app stays on :7860 as fallback.
 - `POST /api/run` streams each step over SSE: parse → cognee → context.dev → SIE → license → ingest → jl price → quote. Every step is a real call or is labelled *flag off* / *fallback*.
 - `POST /api/approve` streams the M3 audit rows, labelled **REPLAY**.

@@ -24,6 +24,7 @@ if JL_BIN.exists():
 import numpy as np
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 from agent import memory as mem
 from agent.audit import store
@@ -35,7 +36,10 @@ from agent.replay import M3_RUN, backfill, replay_m3
 from agent.research import KNOWN_DATASETS, _context_search, _superlinked_rank
 
 INDEX = ROOT / "web" / "index.html"
+LOGOS = ROOT / "assets" / "logos"
 app = FastAPI(title="vibetuning mission control")
+LOGOS.mkdir(parents=True, exist_ok=True)
+app.mount("/assets/logos", StaticFiles(directory=LOGOS), name="logos")
 
 # ---------------------------------------------------------------- streams
 
@@ -452,7 +456,7 @@ def _probe_cognee() -> None:
 
 @app.get("/")
 def index():
-    return FileResponse(INDEX, media_type="text/html")
+    return FileResponse(INDEX, media_type="text/html", headers={"Cache-Control": "no-store"})
 
 
 @app.post("/api/run")
