@@ -82,24 +82,18 @@ def _superlinked_rank(task: str, candidates: list[dict]) -> list[dict]:
     try:
         from sie_sdk import SIEClient
 
-        client = SIEClient(api_key=key, base_url=os.getenv("SIE_BASE_URL", "https://api.superlinked.com"))
-        docs = [f"{c['id']} {c['license']} {c['why']}" for c in candidates]
-        # Rerank primitive — fail closed on any SDK mismatch.
-        scores = None
-        if hasattr(client, "score"):
-            scores = client.score(query=task, documents=docs)
-        elif hasattr(client, "rerank"):
-            scores = client.rerank(query=task, documents=docs)
-        if not scores:
+        model = os.getenv("SIE_RERANK_MODEL", "Qwen/Qwen3-Reranker-0.6B")
+        client = SIEClient(api_key=key, base_url=os.getenv("SIE_BASE_URL", "https://api.superlinked.com"), timeout_s=30)
+        items = [{"id": c["id"], "text": f"{c['id']} · {c['labels']} · {c['why']}"} for c in candidates]
+        out = client.score(model, {"text": task}, items, provision_timeout_s=30)
+        by_id = {s["item_id"]: float(s["score"]) for s in (out or {}).get("scores", [])}
+        if not by_id:
+            flags.notes["superlinked"] = "no scores returned"
             return candidates
-        ranked = list(candidates)
-        try:
-            order = list(scores)
-            ranked.sort(key=lambda c: -float(order[candidates.index(c)] if False else 0))
-        except Exception:
-            pass
-        flags.notes["superlinked"] = "ranked"
-        return ranked
+        scored = [{**c, "score": round(by_id.get(c["id"], by_id.get(f"item-{i}", 0.0)), 4)} for i, c in enumerate(candidates)]
+        scored.sort(key=lambda c: -c["score"])
+        flags.notes["superlinked"] = f"ranked · {model}"
+        return scored
     except Exception as exc:
         flags.notes["superlinked"] = f"failed {exc.__class__.__name__}"
         return candidates

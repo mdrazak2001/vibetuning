@@ -309,7 +309,11 @@ def _run_worker(s: dict, goal: str, choices: dict) -> None:
 
     def _rank():
         if rank_choice == "sie" and flags.superlinked and os.getenv("SIE_API_KEY"):
-            return {"mode": "SIE Serverless", "datasets": _superlinked_rank(goal, KNOWN_DATASETS)}
+            ranked = _superlinked_rank(goal, KNOWN_DATASETS)
+            note = flags.notes.get("superlinked", "")
+            if note.startswith("ranked"):
+                return {"mode": f"SIE Serverless · {note.split('· ', 1)[-1]}", "live": True, "datasets": ranked}
+            return {"mode": f"SIE {note or 'failed'} → lexical", "datasets": _lexical_rank(goal, KNOWN_DATASETS)}
         why = "flag off → lexical" if rank_choice == "sie" else "lexical (chosen)"
         return {"mode": why, "datasets": _lexical_rank(goal, KNOWN_DATASETS)}
 
@@ -317,7 +321,7 @@ def _run_worker(s: dict, goal: str, choices: dict) -> None:
     datasets = KNOWN_DATASETS
     if not err:
         datasets = ranked["datasets"]
-        live = ranked["mode"] == "SIE Serverless"
+        live = ranked.get("live", False)
         _push(s, "step_done", {"id": "rank", "status": "ok" if live else "off", "ms": ms, "label": ranked["mode"],
                                "detail": [{"id": d["id"], "score": d.get("score")} for d in datasets]})
 
