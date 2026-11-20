@@ -234,6 +234,14 @@ html.rail-collapsed #rail{align-items:center}
             </div>
           </a>
           <div class="pipe-conn" aria-hidden="true"><span class="pipe-flow"></span></div>
+          <div class="pipe-node" id="pipeAirbyte" title="PyAirbyte (OSS) source-file → DuckDB cache">
+            <span class="pipe-logo shrink-0"></span>
+            <div class="min-w-0">
+              <div class="text-xs font-medium truncate">Airbyte</div>
+              <div class="text-[10px] text-mute mono truncate" id="pipeAirbyteLab">GPU log sync</div>
+            </div>
+          </div>
+          <div class="pipe-conn" aria-hidden="true"><span class="pipe-flow"></span></div>
           <div class="pipe-node" id="pipeStore">
             <span class="pipe-logo shrink-0"></span>
             <div class="min-w-0">
@@ -395,7 +403,7 @@ let STATUS = null, SPEND = null;
 async function loadStatus() {
   try { STATUS = await (await fetch('/api/status')).json(); } catch { return; }
   const live = STATUS.tiles.filter(t => t.live);
-  $('#stackLabel').textContent = `stack · ${live.length}/${STATUS.tiles.length} live`;
+  $('#stackLabel').textContent = 'stack';
   const logos = $('#stackLogos'); logos.innerHTML = '';
   live.slice(0, 4).forEach(t => { const el = logoTile(TILE_LOGO[t.id], t.name.slice(0, 2).toUpperCase(), 22, true); el.style.borderRadius = '999px'; logos.append(el); });
   const j = STATUS.jarvis || {};
@@ -797,6 +805,11 @@ function paintPipe() {
     gpuDot.style.color = gpuHot ? tone('accent') : tone('mute');
   }
   const storeLab = $('#pipeStoreLab'); if (storeLab) storeLab.textContent = ss ? 'SingleStore' : 'SQLite · SingleStore-ready';
+  const ab = st.airbyte || {};
+  const abSyncing = st.phase === 'airbyte sync';
+  setLit('#pipeAirbyte', ab.ok || abSyncing);
+  const abLab = $('#pipeAirbyteLab');
+  if (abLab) abLab.textContent = abSyncing ? 'syncing GPU log…' : ab.ok ? `${ab.records} records synced` : 'syncs after run';
 }
 
 function fmtMmSs(sec) {
@@ -977,6 +990,7 @@ function initLivePanel() {
   };
   put('#pipeBoat .pipe-logo', 'boat', 'BT', false);
   put('#pipeGpu .pipe-logo', 'jarvislabs', 'JL', false);
+  put('#pipeAirbyte .pipe-logo', 'airbyte', 'AB', false);
   put('#pipeStore .pipe-logo', 'singlestore', 'SS', false);
   put('#pipeAmp .pipe-logo', 'amplitude', 'AM', true);
   $('#liveDispatch').onclick = dispatchLive;

@@ -25,3 +25,6 @@ data/audit.sqlite
 .cognee/
 cognee_system/
 databases/
+
+.venv-source-file/
+logs/airbyte/

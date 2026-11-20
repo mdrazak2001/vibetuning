@@ -177,7 +177,18 @@ def main() -> int:
             m.log(f"[live] list after failed {exc!r}")
         wall = time.time() - t0
         est = round(rate * wall / 3600.0, 2)
-        write_state(state=final_state, phase="paused", est_inr=est, elapsed=round(wall), finished=m.now_iso())
+        write_state(state=final_state, phase="airbyte sync", est_inr=est, elapsed=round(wall), finished=m.now_iso())
+        try:
+            from agent.ingest import airbyte_sync
+
+            ab = airbyte_sync("gpu", str(POINTS), live_id, timeout=300)
+            write_state(airbyte=ab)
+            if ab.get("ok"):
+                emit(live_id, "airbyte_sync_completed", {"stream": ab["stream"], "records": ab["records"],
+                                                          "connector": ab["connector"], "cache": ab["cache"]})
+        except Exception as exc:
+            m.log(f"[live] airbyte sync failed {exc!r}")
+        write_state(phase="paused")
         emit(live_id, "live_train_end", {"state": final_state, "elapsed_sec": round(wall)}, cost=est)
     return 0 if final_state == "complete" else 1
 

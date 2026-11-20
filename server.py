@@ -341,8 +341,12 @@ def _run_worker(s: dict, goal: str, choices: dict) -> None:
     ing, ms, err = _step(s, "ingest", "Ingest manifest → training_rows", ingest_manifests, tool="airbyte")
     if not err:
         mode = ing.get("mode")
+        ab = ing.get("airbyte") or {}
+        if mode == "already" and ab.get("ok"):
+            mode = "airbyte"
+            ing["n"] = ab["records"]
         label = {
-            "airbyte": "PyAirbyte source-file",
+            "airbyte": f"PyAirbyte source-file → DuckDB cache · {ab.get('records', ing.get('n', 0))} records · synced {str(ab.get('at', ''))[11:16]} UTC" if ab else "PyAirbyte source-file",
             "already": f"cached lineage ({ing.get('connector_version') or 'prior sync'})",
             "pandas": "pandas-jsonl (AIRBYTE_ENABLED off)",
         }.get(mode, mode)
@@ -541,6 +545,9 @@ def api_status():
         _JL_CACHE["l4_t"] = time.time()
     rate, src = _JL_CACHE["l4"]
     has = lambda k: bool(os.getenv(k))
+    from agent.ingest import last_airbyte
+
+    _ab = last_airbyte("manifest")
     tiles = [
         {"id": "cognee", "name": "Cognee", "on": f.cognee, "live": bool(mem._COGNEE_OK),
          "note": f.notes.get("cognee") or ("chunk index" if mem._COGNEE_OK else "lexical fallback")},
@@ -548,8 +555,8 @@ def api_status():
          "note": "web search" if has("CONTEXT_DEV_API_KEY") else "no key"},
         {"id": "singlestore", "name": "SingleStore", "on": f.singlestore, "live": store().backend == "singlestore",
          "note": f"audit on {store().backend}"},
-        {"id": "airbyte", "name": "Airbyte", "on": f.airbyte, "live": f.airbyte,
-         "note": "AIRBYTE_ENABLED" if f.airbyte else "flag off · pandas-jsonl"},
+        {"id": "airbyte", "name": "Airbyte", "on": bool(_ab.get("ok")), "live": bool(_ab.get("ok")),
+         "note": f"PyAirbyte OSS · {_ab['records']} records synced" if _ab.get("ok") else "no PyAirbyte sync yet · pandas-jsonl"},
         {"id": "amplitude", "name": "Amplitude", "on": f.amplitude, "live": bool(f.amplitude and has("AMPLITUDE_API_KEY")),
          "note": "HTTP v2" if f.amplitude and has("AMPLITUDE_API_KEY") else "flag off · local mirror"},
         {"id": "statsig", "name": "Statsig", "on": f.statsig, "live": f.statsig,
@@ -620,7 +627,8 @@ def _job_summary(blob: dict) -> dict:
     return {"id": st.get("id"), "state": st.get("state"), "phase": st.get("phase"), "started": st.get("started"),
             "finished": st.get("finished"), "elapsed": st.get("elapsed"), "est_inr": st.get("est_inr"),
             "best_wer": min(evals) if evals else None, "base_wer": base, "epochs": len(evals),
-            "n_points": len(pts), "store": store().backend, "machine_id": st.get("machine_id")}
+            "n_points": len(pts), "store": store().backend, "machine_id": st.get("machine_id"),
+            "airbyte": st.get("airbyte")}
 
 
 @app.get("/api/jobs")

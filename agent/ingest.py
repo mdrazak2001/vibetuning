@@ -109,12 +109,39 @@ def _pyairbyte_rows(sync_id: str) -> list[dict]:
     return rows
 
 
+AIRBYTE_PY = Path(os.getenv("AIRBYTE_PY", "/home/user/.venv-airbyte/bin/python"))
+AIRBYTE_DIR = ROOT / "logs" / "airbyte"
+
+
+def airbyte_sync(mode: str = "manifest", *args: str, timeout: int = 600) -> dict:
+    """Run a PyAirbyte sync in its isolated venv; returns the summary dict."""
+    import subprocess
+
+    if not AIRBYTE_PY.exists():
+        return {"ok": False, "error": "no PyAirbyte venv"}
+    proc = subprocess.run([str(AIRBYTE_PY), str(ROOT / "scripts" / "airbyte_sync.py"), mode, *args],
+                          capture_output=True, text=True, timeout=timeout, cwd=str(ROOT))
+    lines = [l for l in (proc.stdout or "").splitlines() if l.startswith("{")]
+    return json.loads(lines[-1]) if lines else {"ok": False, "error": (proc.stderr or "")[-300:]}
+
+
+def last_airbyte(mode: str = "manifest") -> dict:
+    f = AIRBYTE_DIR / f"last_{mode}.json"
+    try:
+        return json.loads(f.read_text()) if f.exists() else {}
+    except Exception:
+        return {}
+
+
 def ingest_manifests() -> dict:
     flags = status()
     db = store()
     existing = db.lineage(M3_RUN)
     if existing.get("n", 0) >= 1000:
-        return {"ok": True, "skipped": True, **existing, "mode": "already"}
+        ab = last_airbyte("manifest")
+        if ab.get("ok"):
+            flags.notes["airbyte"] = f"PyAirbyte source-file · {ab['records']} records · {ab['at']}"
+        return {"ok": True, "skipped": True, **existing, "mode": "already", "airbyte": ab}
 
     sync_id = str(uuid.uuid4())
     mode = "pandas"
