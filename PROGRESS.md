@@ -50,8 +50,30 @@ L4 is in stock. Planning numbers from the brief: L4 **$0.44/hr**, A100 40GB **$0
 
 Auth note: `jl` wants `JL_API_KEY`. The key was saved as `JARVIS_API` in `.env` (gitignored). Both names now work locally after `jl setup`.
 
-## M1 — plumbing (waiting for GO)
+## M1 — plumbing (done 2026-11-19, GO received)
 
-Hardcoded whisper-tiny + LoRA ~150 steps on `hf-internal-testing/librispeech_asr_dummy` via `jl run --gpu L4`. Adapter download, auto-pause, local WER before/after. Acceptance: spend < $1, adapter on disk, WER printed.
+Plan card: `logs/m1/plan.md`. Cost card: `logs/m1/cost.json`.
 
-**Not started.** Reply **GO** to run M1.
+| Field | Value |
+| --- | --- |
+| GPU | On-demand L4 container `580359` (`vibetuning-m1`), IN2, **not spot** |
+| Live rate | ₹41.31 / hr |
+| FX | ₹93.29 / USD |
+| Predicted | 12 min → **₹8.26 / $0.09** |
+| Timeout ceiling | 30 min → **₹20.66 / $0.22** |
+| Actual | grants 49448.39 → 49434.70 = **₹13.69 / $0.15** |
+| WER before | **0.238261** |
+| WER after | **0.240000** |
+| Adapter | `artifacts/m1/adapter/adapter_model.safetensors` + `adapter_config.json` |
+| Pause | `jl pause 580359` succeeded; `running_instances: 0` |
+| Hard timeout | not hit (~18 min wall clock) |
+
+WER is plumbing-only (same dummy split, 150 steps). Do not treat the tiny after/before delta as a quality result.
+
+Windows cannot SSH to JarvisLabs `:22` (connection timed out). The L4 was created with `jl run --gpu L4` from this laptop; upload failed; the job was then driven from Boat `bx_6nvrrech`, which **can** SSH to the GPU. First train hung on `datasets.map` after CUDA init; stopped and reran with in-process feature prep (`r_3a26277a`, exit 0).
+
+**M1 acceptance:** adapter on disk, WER printed, 0 running, actual $0.15 < $1, logs in `logs/m1/`.
+
+## M2 — dataset forge (waiting for GO)
+
+context.dev discovery + license cards + 1–3h whispered-speech subset as `manifest.jsonl`. Placeholder eval split for ~20 recorded clips. Reply **GO** to start M2.

@@ -1,0 +1,12 @@
+jl list after pause (2026-11-20T02:06Z). Running count: 0.
+
+ID     Name           Status   Resource              Type       Storage  Region  Template
+580359 vibetuning-m1  Paused   1x L4                 on-demand  40GB     IN2     pytorch
+579489 l4             Paused   1x L4                 on-demand  100GB    IN2     vm
+576152 Name me        Paused   16 vCPU / 64GB RAM    on-demand  250GB    IN1     vm
+
+jl status --json resources:
+  running_instances: 0
+  paused_instances: 1
+  running_vms: 0
+  paused_vms: 2

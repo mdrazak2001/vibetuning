@@ -1,0 +1,10 @@
+{
+  "wer_before": 0.2382608695652174,
+  "wer_after": 0.24,
+  "base_model": "openai/whisper-tiny",
+  "dataset": "hf-internal-testing/librispeech_asr_dummy",
+  "n_samples": 73,
+  "max_steps": 150,
+  "elapsed_sec": 40.6,
+  "adapter_dir": "/home/outputs/m1/adapter"
+}
