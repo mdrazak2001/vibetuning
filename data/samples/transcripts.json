@@ -1,0 +1,29 @@
+[
+  {
+    "n": 1,
+    "id": "ex01_whisper_00024",
+    "speaker_id": "ex01",
+    "duration_sec": 3.2,
+    "rms": 0.022268,
+    "text": "Hey, how were those oysters?",
+    "wav": "sample_1_ex01_whisper_00024.wav"
+  },
+  {
+    "n": 2,
+    "id": "ex02_whisper_00010",
+    "speaker_id": "ex02",
+    "duration_sec": 3.193,
+    "rms": 0.036053,
+    "text": "Well hey! What did you do to get in here?",
+    "wav": "sample_2_ex02_whisper_00010.wav"
+  },
+  {
+    "n": 3,
+    "id": "ex03_whisper_00282",
+    "speaker_id": "ex03",
+    "duration_sec": 3.201,
+    "rms": 0.088613,
+    "text": "You can expect a high of sixty and a low of forty seven.",
+    "wav": "sample_3_ex03_whisper_00282.wav"
+  }
+]

@@ -1,0 +1,52 @@
+{
+  "source": "ylacombe/expresso:read:train:style=whisper",
+  "license": "CC-BY-NC-4.0",
+  "gated": false,
+  "label_provenance": "human (Expresso read transcripts)",
+  "n_listed": 1139,
+  "n_clips": 1139,
+  "n_train": 1025,
+  "n_val": 114,
+  "hours": 0.9928,
+  "avg_duration_sec": 3.138,
+  "min_duration_sec": 0.65,
+  "max_duration_sec": 12.186,
+  "sample_rate": 16000,
+  "speakers": {
+    "ex01": 379,
+    "ex02": 380,
+    "ex03": 380
+  },
+  "dropped": {},
+  "elapsed_sec": 455.6,
+  "gpu_spend_inr": 0,
+  "spot_check": [
+    {
+      "n": 1,
+      "id": "ex03_whisper_00264",
+      "speaker_id": "ex03",
+      "duration_sec": 0.65,
+      "rms": 0.048035,
+      "text": "Right?",
+      "wav": "sample_1_ex03_whisper_00264.wav"
+    },
+    {
+      "n": 2,
+      "id": "ex01_whisper_00099",
+      "speaker_id": "ex01",
+      "duration_sec": 2.736,
+      "rms": 0.01942,
+      "text": "That's that's a big difference for me.",
+      "wav": "sample_2_ex01_whisper_00099.wav"
+    },
+    {
+      "n": 3,
+      "id": "ex01_whisper_00048",
+      "speaker_id": "ex01",
+      "duration_sec": 12.186,
+      "rms": 0.023127,
+      "text": "You will be pampered whether you have a one hour treatment or you spend the entire day. You can peel, polish, exfoliate, hydrate and detoxify!",
+      "wav": "sample_3_ex01_whisper_00048.wav"
+    }
+  ]
+}

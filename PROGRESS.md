@@ -61,7 +61,7 @@ Plan card: `logs/m1/plan.md`. Cost card: `logs/m1/cost.json`.
 | FX | ₹93.29 / USD |
 | Predicted | 12 min → **₹8.26 / $0.09** |
 | Timeout ceiling | 30 min → **₹20.66 / $0.22** |
-| Actual | grants 49448.39 → 49434.70 = **₹13.69 / $0.15** |
+| Actual | grants 49448.39 → 49434.70 = **₹13.69** API delta; **logged actual ₹15.20** (includes create/SSH-retry overhead) ≈ **$0.16** |
 | WER before | **0.238261** |
 | WER after | **0.240000** |
 | Adapter | `artifacts/m1/adapter/adapter_model.safetensors` + `adapter_config.json` |
@@ -72,8 +72,42 @@ WER is plumbing-only (same dummy split, 150 steps). Do not treat the tiny after/
 
 Windows cannot SSH to JarvisLabs `:22` (connection timed out). The L4 was created with `jl run --gpu L4` from this laptop; upload failed; the job was then driven from Boat `bx_6nvrrech`, which **can** SSH to the GPU. First train hung on `datasets.map` after CUDA init; stopped and reran with in-process feature prep (`r_3a26277a`, exit 0).
 
-**M1 acceptance:** adapter on disk, WER printed, 0 running, actual $0.15 < $1, logs in `logs/m1/`.
+**M1 acceptance:** adapter on disk, WER printed, 0 running, actual **₹15.20** (< $1), logs in `logs/m1/`. Predicted vs actual for the M3 cost card: **₹8.26 predicted → ₹15.20 actual** (1.84×, Windows SSH failure + hung `datasets.map` retry).
 
-## M2 — dataset forge (waiting for GO)
+Laptop SSH to JarvisLabs `:22` is broken. All future `jl` SSH ops run from `vibetuner`. See `AGENTS.md`.
 
-context.dev discovery + license cards + 1–3h whispered-speech subset as `manifest.jsonl`. Placeholder eval split for ~20 recorded clips. Reply **GO** to start M2.
+## M2 — dataset forge (done 2026-11-19, GO received)
+
+Zero GPU. Boat `vibetuner` CPU + context.dev only. `jl list`: 0 running (M1 L4 `580359` still paused).
+
+### Discovery
+
+| Source | License | Gating | Verdict |
+| --- | --- | --- | --- |
+| [ylacombe/expresso](https://huggingface.co/datasets/ylacombe/expresso) | **CC BY-NC 4.0** | public / ungated | **used** — `read` + `style==whisper`, human transcripts |
+| `facebook/expresso` | — | missing or auth-walled | not usable |
+| [nyuuzyou/asmr](https://huggingface.co/datasets/nyuuzyou/asmr) | **unspecified** (`other`) | public card | **not used**. Labels = distil-whisper/distil-large-v3.5 (**distillation, not human-verified**). Did not download `dataset.tar.zst` (36.3 GB) or `meta.csv`. |
+| WhispSynth / WhispEar papers | n/a | n/a | pointers at Expresso/wTIMIT, not a clip dump |
+
+### Built set (`data/expresso_whisper/`)
+
+| Stat | Value |
+| --- | --- |
+| Clips | **1139** (0 dropped) |
+| Hours | **0.993** (~59.6 min of 16 kHz audio; upstream card lists 79 min read-whisper) |
+| Avg / max duration | 3.14 s / 12.19 s (all ≤ 30 s) |
+| Train / val | 1025 / 114 (seed 42, speaker-stratified) |
+| Speakers | ex01 379, ex02 380, ex03 380 |
+| Format | 16 kHz mono PCM16 WAV |
+| Labels | human Expresso read transcripts |
+| GPU spend | **₹0** |
+
+Held-out TEST loader: `recipes/sft_whisper/eval_loader.py` → `eval_whisper/` (awaiting dropped recordings).
+
+Spot-check (decode + 16 kHz/mono + RMS; transcripts from the source card):
+
+1. `ex01_whisper_00024` 3.20 s — *Hey, how were those oysters?*
+2. `ex02_whisper_00010` 3.19 s — *Well hey! What did you do to get in here?*
+3. `ex03_whisper_00282` 3.20 s — *You can expect a high of sixty and a low of forty seven.*
+
+Wavs in `data/samples/`. Full audio stays on vibetuner (`data/expresso_whisper/audio/`, gitignored).

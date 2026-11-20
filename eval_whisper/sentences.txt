@@ -1,0 +1,4 @@
+# Held-out TEST transcripts. Drop matching audio files in this folder.
+# Format: filename<TAB>your whispered sentence
+# Example:
+# clip_001.wav	hello this is a whisper

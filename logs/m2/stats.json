@@ -1,0 +1,13 @@
+{
+  "source": "ylacombe/expresso:read:train:style=whisper",
+  "license": "CC-BY-NC-4.0",
+  "gated": false,
+  "n_clips": 1139,
+  "n_train": 1025,
+  "n_val": 114,
+  "hours": 0.9928,
+  "avg_duration_sec": 3.138,
+  "gpu_spend_inr": 0,
+  "elapsed_sec": 455.6,
+  "running_gpu_instances": 0
+}

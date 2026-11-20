@@ -1,0 +1,11 @@
+sample_1: sample_1_ex01_whisper_00024.wav
+  id=ex01_whisper_00024 speaker=ex01 dur=3.200s rms=0.022268
+  text: Hey, how were those oysters?
+
+sample_2: sample_2_ex02_whisper_00010.wav
+  id=ex02_whisper_00010 speaker=ex02 dur=3.193s rms=0.036053
+  text: Well hey! What did you do to get in here?
+
+sample_3: sample_3_ex03_whisper_00282.wav
+  id=ex03_whisper_00282 speaker=ex03 dur=3.201s rms=0.088613
+  text: You can expect a high of sixty and a low of forty seven.

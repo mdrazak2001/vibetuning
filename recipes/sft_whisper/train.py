@@ -36,6 +36,9 @@ BASE_MODEL = os.environ.get("M1_BASE_MODEL", "openai/whisper-tiny")
 DATASET_ID = os.environ.get("M1_DATASET", "hf-internal-testing/librispeech_asr_dummy")
 MAX_STEPS = int(os.environ.get("M1_MAX_STEPS", "150"))
 BATCH_SIZE = int(os.environ.get("M1_BATCH_SIZE", "4"))
+RECIPE_DIR = Path(__file__).resolve().parent
+if str(RECIPE_DIR) not in sys.path:
+    sys.path.insert(0, str(RECIPE_DIR))
 
 
 def log(msg: str) -> None:
@@ -83,6 +86,21 @@ def write_metrics(payload: dict) -> None:
     METRICS_PATH.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
+def _dataset_from_eval(items: list) -> list:
+    """Load eval_whisper clips in-process. Do not datasets.map after CUDA."""
+    import numpy as np
+    import soundfile as sf
+
+    rows = []
+    for item in items:
+        y, sr = sf.read(item["audio_path"], dtype="float32", always_2d=False)
+        y = np.asarray(y, dtype=np.float32)
+        if y.ndim > 1:
+            y = y.mean(axis=1)
+        rows.append({"audio": {"array": y, "sampling_rate": int(sr)}, "text": item["text"]})
+    return rows
+
+
 def main() -> int:
     started = time.time()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -117,8 +135,23 @@ def main() -> int:
     raw = raw.cast_column("audio", Audio(sampling_rate=16000))
     log(f"[m1] n_samples={len(raw)}")
 
+    wer_set = raw
+    eval_n = 0
+    try:
+        from eval_loader import is_eval_ready, load_eval_whisper
+
+        if is_eval_ready():
+            eval_items = load_eval_whisper()
+            eval_n = len(eval_items)
+            log(f"[m1] eval_whisper ready n={eval_n} -> WER uses held-out recorded clips")
+            wer_set = _dataset_from_eval(eval_items)
+        else:
+            log("[m1] eval_whisper empty; drop wavs + sentences.txt there. WER uses dummy split")
+    except Exception as exc:  # noqa: BLE001
+        log(f"[m1] eval_loader skipped: {exc!r}")
+
     log("[m1] WER before (base whisper-tiny, no LoRA)")
-    wer_before = run_wer(model, processor, raw, device)
+    wer_before = run_wer(model, processor, wer_set, device)
     log(f"M1_WER_BEFORE={wer_before:.6f}")
     write_metrics(
         {
@@ -213,7 +246,7 @@ def main() -> int:
     log(f"[m1] adapter saved -> {ADAPTER_DIR}")
 
     log("[m1] WER after (LoRA adapter)")
-    wer_after = run_wer(trainer.model, processor, raw, device)
+    wer_after = run_wer(trainer.model, processor, wer_set, device)
     log(f"M1_WER_AFTER={wer_after:.6f}")
     payload = {
         "wer_before": wer_before,
@@ -221,6 +254,7 @@ def main() -> int:
         "base_model": BASE_MODEL,
         "dataset": DATASET_ID,
         "n_samples": len(raw),
+        "n_eval_whisper": eval_n,
         "max_steps": MAX_STEPS,
         "elapsed_sec": round(time.time() - started, 1),
         "adapter_dir": str(ADAPTER_DIR),

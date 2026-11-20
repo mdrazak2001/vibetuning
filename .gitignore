@@ -16,3 +16,6 @@ runs/
 tokenizer.json
 artifacts/**/trainer_work/
 .vibetuning/
+data/expresso_whisper/audio/
+data/expresso_whisper/work/
+data/expresso_whisper/clips.jsonl
