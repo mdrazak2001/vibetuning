@@ -156,8 +156,8 @@ html.rail-collapsed #rail{align-items:center}
   <section id="view-run">
     <div id="hero" class="mx-auto max-w-2xl px-5 min-h-[82vh] flex flex-col justify-center items-center text-center">
       <div class="text-xs text-mute mb-5 px-3 py-1 rounded-full border border-line bg-panel">M3 shipped · held-out WER <span class="mono text-ink">7.83% → 7.17%</span> for <span class="mono text-ink" title="₹5.24">$0.06</span></div>
-      <h1 class="text-5xl font-semibold tracking-tight leading-tight mb-3">What should your<br/>model learn?</h1>
-      <p class="text-mute mb-8">An agent that finds data, checks licenses, recalls past overruns, and quotes the GPU before it spends a dollar.</p>
+      <h1 class="text-5xl font-semibold tracking-tight leading-tight mb-3">Your autonomous<br/>training agent.</h1>
+      <p class="text-mute mb-8">Most AI tasks no longer need a frontier model. Describe the behaviour — tuno finds licence-clean data, rents the GPU, and fine-tunes a small model that does it better and cheaper.</p>
       <div class="frame w-full text-left">
         <div class="bg-panel rounded-xl p-3">
           <div class="flex gap-1 mb-2" id="methods">
@@ -542,6 +542,83 @@ async function doneRow(d) {
   else { if (!reduced) await sleep(DWELL[d.id] || 300); row.classList.add('collapsed'); }
 }
 
+let sampleAudio = null, sampleAudioUrl = '';
+function toggleSampleAudio(url) {
+  if (!url) return;
+  if (!sampleAudio) sampleAudio = new Audio();
+  if (sampleAudioUrl === url && !sampleAudio.paused) { sampleAudio.pause(); return; }
+  sampleAudioUrl = url; sampleAudio.src = url; sampleAudio.play().catch(() => {});
+}
+async function loadDatasetPreview(host) {
+  if (!host || RUN.dsPreview) return;
+  RUN.dsPreview = true;
+  try {
+    const res = await fetch('/api/dataset/sample?n=6');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data || !Array.isArray(data.rows)) return;
+    paintDatasetPreview(host, data);
+  } catch {}
+}
+function paintDatasetPreview(host, data) {
+  const card = document.createElement('div');
+  card.className = 'mt-3 rounded-lg border border-line bg-soft p-2.5';
+  const head = document.createElement('div');
+  head.className = 'text-xs mb-0.5';
+  const src = String(data.source_url || '');
+  if (/^https?:\/\//i.test(src)) {
+    const a = document.createElement('a');
+    a.href = src; a.target = '_blank'; a.rel = 'noopener';
+    a.className = 'text-accent hover:underline';
+    a.textContent = data.dataset ?? '';
+    head.append(a);
+  } else {
+    const s = document.createElement('span'); s.textContent = data.dataset ?? ''; head.append(s);
+  }
+  const rest = document.createElement('span');
+  rest.className = 'text-mute';
+  const total = data.total != null ? Number(data.total).toLocaleString() : '—';
+  rest.textContent = ` · ${total} rows · ${data.filter ?? ''}`;
+  head.append(rest);
+  const via = document.createElement('div');
+  via.className = 'mono text-[11px] text-mute mb-2';
+  via.textContent = `via ${data.connector ?? ''} → ${data.cache ?? ''} · ${data.license ?? ''}`;
+  const table = document.createElement('table');
+  table.className = 'w-full text-xs';
+  const tbody = document.createElement('tbody');
+  for (const row of data.rows.slice(0, 6)) {
+    const tr = document.createElement('tr');
+    tr.className = 'border-t border-line';
+    const tdPlay = document.createElement('td');
+    tdPlay.className = 'w-7 py-1 pr-1 align-middle';
+    if (row.audio_url) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'press w-5 h-5 rounded grid place-items-center text-[9px] text-accent';
+      btn.textContent = '▶';
+      btn.setAttribute('aria-label', 'play sample');
+      const url = row.audio_url;
+      btn.onclick = e => { e.stopPropagation(); toggleSampleAudio(url); };
+      tdPlay.append(btn);
+    }
+    const tdText = document.createElement('td');
+    tdText.className = 'py-1 pr-2 min-w-0';
+    const t = String(row.text ?? '');
+    tdText.textContent = t.length > 80 ? t.slice(0, 80) + '…' : t;
+    const tdSplit = document.createElement('td');
+    tdSplit.className = 'py-1 w-16 text-right align-middle';
+    const pill = document.createElement('span');
+    pill.className = 'mono text-[10px] px-1.5 py-0.5 rounded-full border border-line bg-panel text-mute';
+    pill.textContent = row.split ?? '';
+    tdSplit.append(pill);
+    tr.append(tdPlay, tdText, tdSplit);
+    tbody.append(tr);
+  }
+  table.append(tbody);
+  card.append(head, via, table);
+  host.append(card);
+}
+
 async function onRunEvent(ev, d) {
   switch (ev) {
     case 'run': RUN.streamId = d.stream_id; break;
@@ -587,6 +664,7 @@ async function onRunEvent(ev, d) {
       b.append(el);
       countTo(el.querySelector('.n'), 0, d.done, {ms: 900, fmt: v => Math.round(v).toLocaleString()});
       requestAnimationFrame(() => requestAnimationFrame(() => el.querySelector('.bar').style.width = d.total ? '100%' : '0'));
+      loadDatasetPreview(b);
       break; }
     case 'quote': {
       RUN.quote = d; RUN.facts.rate = d.live_l4_inr_per_hr; RUN.facts.rateSrc = d.rate_source;

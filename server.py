@@ -620,6 +620,39 @@ def api_live():
             "dispatch_enabled": os.getenv("LIVE_DISPATCH") == "1"}
 
 
+AUDIO_DIR = ROOT / "data" / "expresso_whisper" / "audio"
+
+
+@app.get("/api/dataset/sample")
+def api_dataset_sample(n: int = 8):
+    f = ROOT / "logs" / "airbyte" / "manifest_rows.jsonl"
+    if not f.exists():
+        return {"rows": [], "total": 0}
+    lines = [l for l in f.read_text(encoding="utf-8").splitlines() if l.strip()]
+    step = max(1, len(lines) // max(1, min(n, 20)))
+    rows = []
+    for l in lines[::step][: min(n, 20)]:
+        r = json.loads(l)
+        name = Path(r.get("audio_path") or "").name
+        rows.append({"text": r.get("text"), "split": r.get("split"), "audio": name,
+                     "audio_url": f"/api/dataset/audio/{name}" if (AUDIO_DIR / name).exists() else None})
+    from agent.ingest import last_airbyte
+
+    ab = last_airbyte("manifest")
+    return {"rows": rows, "total": len(lines), "dataset": "ylacombe/expresso", "license": "CC BY-NC 4.0",
+            "source_url": "https://huggingface.co/datasets/ylacombe/expresso",
+            "filter": "read split · style=whisper · human transcripts",
+            "connector": ab.get("connector"), "cache": ab.get("cache"), "synced_at": ab.get("at")}
+
+
+@app.get("/api/dataset/audio/{name}")
+def api_dataset_audio(name: str):
+    f = AUDIO_DIR / Path(name).name
+    if not f.exists() or f.suffix != ".wav":
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return FileResponse(f, media_type="audio/wav")
+
+
 def _job_summary(blob: dict) -> dict:
     st, pts = blob.get("state", {}), blob.get("points", [])
     evals = [p["wer"] for p in pts if p.get("kind") == "eval" and p.get("wer") is not None]
