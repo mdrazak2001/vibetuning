@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>tuno · architecture</title>
+<style>
+  :root { --bg:#f7f7f4; --ink:#14161a; --mute:#6b7280; --line:#d9dbe0; --accent:#3b5bdb; --ok:#2f9e44; --warn:#e8590c; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); font-family: Inter, ui-sans-serif, system-ui, sans-serif; color:var(--ink); }
+  .slide { width:1600px; height:900px; padding:44px 56px; display:flex; flex-direction:column; gap:22px;
+    background-image: radial-gradient(#d4d6db 1px, transparent 1px); background-size: 22px 22px; }
+  header { display:flex; align-items:baseline; justify-content:space-between; }
+  h1 { font-size:46px; font-weight:700; letter-spacing:-1px; }
+  h1 span { color:var(--accent); }
+  .sub { font-size:19px; color:var(--mute); margin-top:6px; }
+  .lane { background:#fff; border:1px solid var(--line); border-radius:22px; padding:18px 22px 22px; position:relative; }
+  .lane h2 { font-size:14px; letter-spacing:2px; text-transform:uppercase; color:var(--mute); margin-bottom:14px; font-weight:600; }
+  .row { display:flex; align-items:stretch; gap:0; }
+  .node { flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px; padding:12px 8px;
+    border:1.5px solid var(--line); border-radius:16px; background:#fff; min-width:0; }
+  .node.hot { border-color:var(--accent); box-shadow:0 0 0 4px rgba(59,91,219,.08); }
+  .node img, .node .glyph { width:46px; height:46px; border-radius:12px; object-fit:contain; background:#f1f2f4; padding:6px; }
+  .node .glyph { display:flex; align-items:center; justify-content:center; font-size:26px; }
+  .node b { font-size:16px; }
+  .node small { font-size:12.5px; color:var(--mute); line-height:1.3; }
+  .arrow { width:34px; flex:none; display:flex; align-items:center; justify-content:center; color:var(--accent); font-size:24px; font-weight:700; }
+  .pill { display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:#e7f5ea; color:var(--ok); }
+  .pill.soon { background:#f1f2f4; color:var(--mute); }
+  .bottom { display:grid; grid-template-columns: 1.15fr 1fr; gap:22px; }
+  .loop { display:flex; align-items:center; gap:16px; }
+  .loop .big { font-size:40px; }
+  .loop p { font-size:16px; line-height:1.45; }
+  .loop b { color:var(--warn); }
+  .stats { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
+  .stat { border:1px solid var(--line); border-radius:14px; padding:12px 14px; }
+  .stat .v { font-size:26px; font-weight:700; }
+  .stat .v.g { color:var(--ok); }
+  .stat .k { font-size:12.5px; color:var(--mute); margin-top:2px; }
+  .back { position:absolute; right:22px; top:16px; font-size:13px; color:var(--warn); font-weight:600; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <header>
+    <div>
+      <h1>tu<span>no</span> · your autonomous training agent</h1>
+      <div class="sub">Most AI tasks no longer need a frontier model. Describe the behaviour → tuno plans, buys, and runs the fine-tune.</div>
+    </div>
+  </header>
+
+  <section class="lane">
+    <h2>① Plan: research → quote</h2>
+    <div class="back">↺ lessons from every run feed back into memory</div>
+    <div class="row">
+      <div class="node"><div class="glyph">💬</div><b>Goal</b><small>"catch whispered English"</small></div>
+      <div class="arrow">→</div>
+      <div class="node hot"><img src="../assets/logos/cognee.png" alt="Cognee" /><b>Cognee</b><small>cross-context memory<br/>recalls past overruns</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><img src="../assets/logos/context.png" alt="context.dev" /><b>context.dev</b><small>web search<br/>for datasets</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><img src="../assets/logos/superlinked.png" alt="Superlinked" /><b>Superlinked</b><small>Qwen3 reranker<br/>scores candidates</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="glyph">⚖️</div><b>Licence gate</b><small>keeps Expresso (CC BY-NC)<br/>rejects unlicensed ASMR</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><img src="../assets/logos/airbyte.png" alt="Airbyte" /><b>Airbyte</b><small>HF manifest → DuckDB<br/>1,139 rows</small></div>
+      <div class="arrow">→</div>
+      <div class="node hot"><img src="../assets/logos/jarvislabs.png" alt="JarvisLabs" /><b>Quote</b><small>live L4 price ×<br/>memory correction</small></div>
+    </div>
+  </section>
+
+  <section class="lane">
+    <h2>② Execute: approve → live GPU job</h2>
+    <div class="row">
+      <div class="node"><div class="glyph">✅</div><b>Approve</b><small>you sign off<br/>on cost cap</small></div>
+      <div class="arrow">→</div>
+      <div class="node hot"><img src="../assets/logos/boat.png" alt="Boat" /><b>Boat</b><small>control plane<br/>runs the relay</small></div>
+      <div class="arrow">→</div>
+      <div class="node hot"><img src="../assets/logos/jarvislabs.png" alt="JarvisLabs" /><b>JarvisLabs L4</b><small>warm resume · LoRA SFT<br/>auto-pause in finally</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><img src="../assets/logos/airbyte.png" alt="Airbyte" /><b>Airbyte</b><small>syncs GPU<br/>metrics log</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><img src="../assets/logos/singlestore.png" alt="SingleStore" /><b>Audit store</b><small>SQLite today<br/><span class="pill soon">SingleStore-ready</span></small></div>
+      <div class="arrow">→</div>
+      <div class="node"><img src="../assets/logos/amplitude.png" alt="Amplitude" /><b>Amplitude</b><small>live_train_step<br/>live_epoch_eval</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="glyph">📈</div><b>Jobs view</b><small>loss + WER charts<br/>job history</small></div>
+    </div>
+  </section>
+
+  <div class="bottom">
+    <section class="lane loop">
+      <div class="big">🧠</div>
+      <p><strong>Self-improving loop.</strong> First run cold-started a GPU: predicted ₹8.26, paid ₹15.20, so it was <b>1.84× over</b>.
+        Cognee stores the lesson, and now tuno reuses warm GPUs and corrects its quotes. M3 came in at ₹5.24 against a ₹9.9 quote.</p>
+    </section>
+    <section class="lane">
+      <h2>③ Result: live run today</h2>
+      <div class="stats">
+        <div class="stat"><div class="v g">7.83% → 6.95%</div><div class="k">word error rate, whispered speech</div></div>
+        <div class="stat"><div class="v">$0.05</div><div class="k">GPU cost · 6 min on L4</div></div>
+        <div class="stat"><div class="v">0</div><div class="k">GPUs left running (auto-pause)</div></div>
+      </div>
+    </section>
+  </div>
+</div>
+</body>
+</html>
