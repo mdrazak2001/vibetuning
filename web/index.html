@@ -478,7 +478,7 @@ let RUN = {streamId: null, goal: '', choices: {provider:'boat', ranking:'sie', m
 async function start(choices) {
   if (RUN.busy) return;
   const goal = ($('#goal').value.trim() || EXAMPLES[0]);
-  RUN = {...RUN, goal, busy: true, quote: null, card: null, facts: {}, ok: false, choicesData: null};
+  RUN = {...RUN, goal, busy: true, quote: null, card: null, facts: {}, ok: false, choicesData: null, gap: null};
   if (choices) RUN.choices = {...RUN.choices, ...choices};
   $('#go').innerHTML = '<span class="ring" style="background:conic-gradient(rgb(var(--onaccent)) 0 25%,transparent 25%)"></span>';
   await sleep(reduced ? 0 : 250);
@@ -674,6 +674,26 @@ async function onRunEvent(ev, d) {
       break; }
     case 'choices_required': RUN.choicesData = d; break;
     case 'card': RUN.card = d; RUN.ok = true; break;
+    case 'recipe_gap': {
+      RUN.gap = d;
+      const card = h(`<div class="enter panel p-5 mt-3" style="border-color:rgb(var(--warn) / .5)">
+        <div class="flex items-center gap-2 mb-2"><span class="mono text-[11px] px-2 py-0.5 rounded-full border" style="color:${tone('warn')};border-color:${tone('warn')}">recipe gap</span>
+        <span class="font-semibold text-sm"></span></div>
+        <p class="text-sm text-mute mb-3"></p>
+        <div class="text-[11px] text-mute mb-1 mono"></div><ol class="text-sm space-y-1"></ol></div>`);
+      card.querySelector('.font-semibold').textContent = `“${d.task}”`;
+      card.querySelector('p').textContent = d.message;
+      card.querySelector('.mono.mb-1').textContent = `what tuno found · ranked by ${d.rank_mode || '—'}`;
+      const ol = card.querySelector('ol');
+      (d.ranked || []).forEach((r, i) => {
+        const li = h(`<li class="flex items-center gap-3"><span class="mono text-[11px] text-mute w-4"></span><a target="_blank" rel="noopener" class="flex-1 truncate hover:text-accent"></a><span class="mono text-[11px] text-accent"></span></li>`);
+        li.querySelector('span').textContent = String(i + 1);
+        const a = li.querySelector('a'); a.textContent = r.title; if (r.url) a.href = r.url;
+        li.querySelector('.text-accent').textContent = r.score != null ? Number(r.score).toFixed(3) : '';
+        ol.append(li);
+      });
+      $('#stream').append(card);
+      break; }
     case 'error': {
       $('#stream').append(h(`<div class="enter panel px-3 py-2 text-sm text-bad" style="border-color:rgb(var(--bad) / .5)">⚠ ${esc(d.id ? d.id + ': ' : '')}${esc(inrText(d.error))}</div>`));
       break; }
@@ -682,6 +702,10 @@ async function onRunEvent(ev, d) {
 
 function finishWork() {
   const f = RUN.facts;
+  if (RUN.gap) {
+    stepState('work', 'done', 'recipe gap · no spend');
+    return;
+  }
   if (!RUN.ok) {
     stepState('work', 'active', 'incomplete');
     const retry = h('<div class="flex justify-end mt-3"><button class="press btn-primary px-4 h-10">Retry research</button></div>');

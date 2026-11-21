@@ -160,7 +160,8 @@ def _parse(goal: str) -> dict:
     return {
         "method": "rule-based parse (no LLM)",
         "tags": tags,
-        "modality": "audio → text" if speech else "unknown (defaulting to the M3 ASR recipe)",
+        "speech": speech,
+        "modality": "audio → text" if speech else "no shipped recipe yet",
         "base_model": "openai/whisper-small",
         "recipe": "recipes/sft_whisper · LoRA SFT",
     }
@@ -264,6 +265,42 @@ def _step(s, sid, title, fn, **meta):
         return None, ms, err
 
 
+def _recipe_gap(s: dict, goal: str, flags) -> None:
+    """Non-speech goal: real search + real Superlinked rerank of what was found, then stop before spending."""
+    web, ms, err = _step(s, "search", "Search the web", lambda: _context_search(f"{goal} huggingface dataset license", 6),
+                         tool="context.dev")
+    rows = [{**h, "rank": i + 1, "relevance": round(1 - i * 0.14, 2)} for i, h in enumerate(web or [])]
+    if not err:
+        emit(M3_RUN, "search", {"task": goal, "tool": "context.dev", "n": len(rows)})
+        _push(s, "search_results", {"results": rows, "relevance_label": "rank order from context.dev",
+                                    "label": f"{len(rows)} live results"})
+        _push(s, "step_done", {"id": "search", "status": "ok" if rows else "off", "ms": ms, "label": f"{len(rows)} results"})
+
+    cands = [{"id": (r.get("title") or r.get("url") or f"result {i}")[:80], "labels": (r.get("snippet") or "")[:200],
+              "why": r.get("url") or "", "url": r.get("url")} for i, r in enumerate(rows)]
+
+    def _rank():
+        if cands and flags.superlinked and os.getenv("SIE_API_KEY"):
+            ranked = _superlinked_rank(goal, cands)
+            if flags.notes.get("superlinked", "").startswith("ranked"):
+                return {"mode": f"SIE Serverless · {flags.notes['superlinked'].split('· ', 1)[-1]}", "items": ranked}
+        return {"mode": "rank order (SIE unavailable)", "items": cands}
+
+    ranked, ms, err = _step(s, "rank", "Rank what we found", _rank, tool="superlinked")
+    items = (ranked or {}).get("items", [])
+    if not err:
+        _push(s, "step_done", {"id": "rank", "status": "ok", "ms": ms, "label": ranked["mode"],
+                               "detail": [{"id": c["id"], "score": c.get("score")} for c in items]})
+    emit(M3_RUN, "recipe_gap", {"task": goal[:120], "candidates": len(items)})
+    _push(s, "recipe_gap", {
+        "task": goal,
+        "message": "No shipped recipe for this task yet, so tuno stops here instead of quoting or renting a GPU "
+                   "for something it can't train and evaluate. Speech LoRA SFT is the recipe that runs end to end today.",
+        "ranked": [{"title": c["id"], "url": c.get("url"), "score": c.get("score")} for c in items[:5]],
+        "rank_mode": (ranked or {}).get("mode"),
+    })
+
+
 def _run_worker(s: dict, goal: str, choices: dict) -> None:
     flags = status()
     run_id = M3_RUN
@@ -287,6 +324,11 @@ def _run_worker(s: dict, goal: str, choices: dict) -> None:
         label = "cognee" if src.startswith("cognee") else ("lexical fallback (cognee not ready)" if mem_choice == "cognee" else "lexical (chosen)")
         _push(s, "memory_hit", {"source": src, "label": label, "lesson": lesson, "hits": [h[:400] for h in hits[:4]]})
         _push(s, "step_done", {"id": "memory", "status": "ok", "ms": ms, "label": label})
+
+    if parsed and not parsed.get("speech"):
+        _recipe_gap(s, goal, flags)
+        _finish(s)
+        return
 
     query = f"{goal} huggingface dataset license whispered speech ASR"
     web, ms, err = _step(s, "search", "Search the web", lambda: _context_search(query, 5), tool="context.dev")
