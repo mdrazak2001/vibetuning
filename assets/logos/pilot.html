@@ -18,6 +18,7 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
+    height: 100%;
     background: rgb(var(--bg));
     color: rgb(var(--ink));
   }
@@ -25,21 +26,25 @@
     font-family: Inter, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     line-height: 1.5;
-    min-height: 100vh;
     background-image: radial-gradient(rgb(16 17 20 / .06) 1px, transparent 1.2px);
     background-size: 24px 24px;
     background-attachment: fixed;
   }
   .wrap {
-    max-width: 880px;
+    height: 100vh;
+    box-sizing: border-box;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 48px 28px 80px;
+    padding: clamp(16px, 3vh, 32px) clamp(20px, 4vw, 56px);
+    display: flex;
+    flex-direction: column;
   }
   .topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 48px;
+    flex: none;
+    margin-bottom: clamp(8px, 1.4vh, 14px);
   }
   .wordmark {
     font-weight: 600;
@@ -55,150 +60,205 @@
     transition: color 180ms ease;
   }
   .back:hover { color: rgb(var(--accent)); }
+  .stage {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 46fr 54fr;
+    gap: clamp(16px, 2.4vw, 36px);
+    align-items: stretch;
+  }
+  .photo-col {
+    position: relative;
+    min-height: 0;
+    height: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgb(var(--line));
+    box-shadow: 0 1px 2px rgb(16 17 20 / .04), 0 12px 32px -12px rgb(16 17 20 / .12);
+  }
+  .photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .caption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: clamp(36px, 6vh, 56px) 18px 14px;
+    background: linear-gradient(transparent, rgb(16 17 20 / .82));
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .copy {
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(8px, 1.6vh, 16px);
+  }
   .eyebrow {
     display: inline-block;
+    align-self: flex-start;
     font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: 12px;
+    font-size: clamp(10px, 1.4vh, 12px);
     color: rgb(var(--accent));
     border: 1px solid rgb(var(--accent));
     background: rgb(59 130 246 / .08);
     border-radius: 999px;
-    padding: 4px 12px;
-    margin-bottom: 18px;
+    padding: 3px 12px;
   }
   h1 {
-    font-size: 44px;
+    font-size: clamp(28px, 4.2vh, 44px);
     font-weight: 650;
     letter-spacing: -0.035em;
     line-height: 1.12;
-    margin-bottom: 12px;
   }
   .subtitle {
-    font-size: 18px;
+    font-size: clamp(14px, 2vh, 18px);
     color: rgb(var(--mute));
-    margin-bottom: 40px;
     max-width: 36em;
-  }
-  .photo {
-    width: 100%;
-    display: block;
-    border-radius: 16px;
-    border: 1px solid rgb(var(--line));
-    box-shadow: 0 1px 2px rgb(16 17 20 / .04), 0 12px 32px -12px rgb(16 17 20 / .12);
-  }
-  .caption {
-    font-size: 14px;
-    color: rgb(var(--mute));
-    margin-top: 12px;
-    margin-bottom: 40px;
+    line-height: 1.4;
   }
   .cards {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 48px;
+    gap: clamp(8px, 1.2vh, 12px);
+    min-height: 0;
   }
   .card {
     background: #fff;
     border: 1px solid rgb(var(--line));
     border-radius: 14px;
-    padding: 24px;
+    padding: 16px;
     box-shadow: 0 1px 2px rgb(16 17 20 / .04);
+    min-width: 0;
   }
   .card-head {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 18px;
+    gap: 10px;
+    margin-bottom: clamp(8px, 1.4vh, 12px);
   }
   .card-head img {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     object-fit: cover;
     flex: none;
   }
   .mark {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     background: rgb(var(--accent));
     display: grid;
     place-items: center;
     flex: none;
   }
   .mark span {
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     background: #fff;
   }
-  .card-name { font-weight: 600; font-size: 15px; line-height: 1.2; }
+  .card-name { font-weight: 600; font-size: 14px; line-height: 1.2; }
   .card-meta {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: 11px;
+    font-size: 10px;
     color: rgb(var(--mute));
     margin-top: 2px;
   }
   .card h2 {
-    font-size: 16px;
+    font-size: clamp(13px, 1.8vh, 15px);
     font-weight: 650;
     letter-spacing: -0.02em;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
   .card p, .measure p {
-    font-size: 15px;
+    font-size: 13.5px;
     color: rgb(var(--ink));
-    line-height: 1.6;
+    line-height: 1.5;
   }
   h2.section {
-    font-size: 20px;
+    font-size: clamp(15px, 2.2vh, 18px);
     font-weight: 650;
     letter-spacing: -0.025em;
-    margin-bottom: 16px;
+    margin-bottom: clamp(6px, 1vh, 10px);
   }
-  .plan { margin-bottom: 40px; }
-  .steps { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .plan, .measure { min-height: 0; }
+  .steps { list-style: none; display: flex; flex-direction: column; gap: clamp(6px, 1vh, 8px); }
   .steps li {
     display: flex;
     align-items: flex-start;
-    gap: 14px;
+    gap: 12px;
     background: #fff;
     border: 1px solid rgb(var(--line));
-    border-radius: 14px;
-    padding: 16px 18px;
+    border-radius: 10px;
+    padding: clamp(8px, 1.2vh, 10px) 12px;
     box-shadow: 0 1px 2px rgb(16 17 20 / .04);
-    font-size: 15px;
-    line-height: 1.55;
+    font-size: 13.5px;
+    line-height: 1.45;
   }
   .badge {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: rgb(var(--accent));
     background: rgb(59 130 246 / .08);
     border: 1px solid rgb(var(--accent) / .35);
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
     display: grid;
     place-items: center;
     flex: none;
     margin-top: 1px;
   }
-  .measure { margin-bottom: 48px; }
-  .measure p { color: rgb(var(--ink)); }
   footer {
-    font-size: 13px;
+    font-size: clamp(11px, 1.6vh, 13px);
     color: rgb(var(--mute));
-    padding-top: 24px;
+    padding-top: clamp(8px, 1.4vh, 12px);
     border-top: 1px solid rgb(var(--line));
+    margin-top: auto;
   }
-  @media (max-width: 720px) {
-    .wrap { padding: 32px 20px 64px; }
+
+  @media (min-width: 900px) and (min-height: 640px) {
+    body { overflow: hidden; }
+  }
+
+  @media (max-width: 899px), (max-height: 639px) {
+    body { overflow: auto; }
+    .wrap {
+      height: auto;
+      min-height: 100vh;
+      padding: 32px 20px 64px;
+    }
+    .stage {
+      display: flex;
+      flex-direction: column;
+      flex: none;
+      min-height: 0;
+      gap: 20px;
+    }
+    .photo-col {
+      height: 50vh;
+      min-height: 240px;
+    }
+    .copy {
+      overflow: visible;
+      gap: 16px;
+    }
     h1 { font-size: 32px; }
     .subtitle { font-size: 16px; }
     .cards { grid-template-columns: 1fr; }
+    .card { padding: 20px; }
+    .card p, .measure p, .steps li { font-size: 15px; }
+    footer { margin-top: 8px; }
   }
 </style>
 </head>
@@ -209,62 +269,68 @@
       <a class="back" href="/">← back to tuno</a>
     </div>
 
-    <span class="eyebrow">pilot · scoping</span>
-    <h1>tuno × Archgen Labs</h1>
-    <p class="subtitle">Fine-tuning a small, private model for AI chip physical design.</p>
+    <div class="stage">
+      <div class="photo-col">
+        <img class="photo" src="archgen-pilot.jpg" alt="Mohammed Razak with Naveen Venkat of Archgen Labs" />
+        <p class="caption">Mohammed Razak (tuno) with Naveen Venkat, Co-founder &amp; CTO of Archgen Labs (YC F26) · San Francisco, Nov 2026</p>
+      </div>
 
-    <img class="photo" src="archgen-pilot.jpg" alt="Mohammed Razak with Naveen Venkat of Archgen Labs" />
-    <p class="caption">Mohammed Razak (tuno) with Naveen Venkat, Co-founder &amp; CTO of Archgen Labs (YC F26) · San Francisco, Nov 2026</p>
+      <div class="copy">
+        <span class="eyebrow">pilot · scoping</span>
+        <h1>tuno × Archgen Labs</h1>
+        <p class="subtitle">Fine-tuning a small, private model for AI chip physical design.</p>
 
-    <div class="cards">
-      <article class="card">
-        <div class="card-head">
-          <img src="archgen.png" width="40" height="40" alt="Archgen Labs" />
-          <div>
-            <div class="card-name">Archgen Labs</div>
-            <div class="card-meta">YC F26 · Bengaluru / SF</div>
-          </div>
+        <div class="cards">
+          <article class="card">
+            <div class="card-head">
+              <img src="archgen.png" width="40" height="40" alt="Archgen Labs" />
+              <div>
+                <div class="card-name">Archgen Labs</div>
+                <div class="card-meta">YC F26 · Bengaluru / SF</div>
+              </div>
+            </div>
+            <h2>What they do</h2>
+            <p>Archgen builds Newton, an AI agent for chip physical design. It reads timing and DRC reports, patches the flow and reruns — for single dies and 3D-stacked chips. Their placement engine ranked #1 in Hudson River Trading's macro-placement challenge.</p>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <div class="mark" aria-hidden="true"><span></span></div>
+              <div>
+                <div class="card-name wordmark">tu<span class="no">no</span></div>
+                <div class="card-meta">autonomous training agent</div>
+              </div>
+            </div>
+            <h2>What we're piloting</h2>
+            <p>tuno fine-tunes a small open model on flow logs → knob fixes, so Newton's fix loop runs cheaper, faster and on-prem — customer chip IP never leaves the building.</p>
+          </article>
         </div>
-        <h2>What they do</h2>
-        <p>Archgen builds Newton, an AI agent for chip physical design. It reads timing and DRC reports, patches the flow and reruns — for single dies and 3D-stacked chips. Their placement engine ranked #1 in Hudson River Trading's macro-placement challenge.</p>
-      </article>
-      <article class="card">
-        <div class="card-head">
-          <div class="mark" aria-hidden="true"><span></span></div>
-          <div>
-            <div class="card-name wordmark">tu<span class="no">no</span></div>
-            <div class="card-meta">autonomous training agent</div>
-          </div>
-        </div>
-        <h2>What we're piloting</h2>
-        <p>tuno fine-tunes a small open model on flow logs → knob fixes, so Newton's fix loop runs cheaper, faster and on-prem — customer chip IP never leaves the building.</p>
-      </article>
+
+        <section class="plan">
+          <h2 class="section">Plan</h2>
+          <ol class="steps">
+            <li>
+              <span class="badge">1</span>
+              <span><b>Data.</b> Sweep knobs on open OpenROAD designs (SkyWater 130, Nangate45) → log, knobs, outcome. Then Archgen's own runs.</span>
+            </li>
+            <li>
+              <span class="badge">2</span>
+              <span><b>SFT.</b> LoRA on a small open coding model (e.g. Qwen2.5-Coder 7B): log + knobs in, fix out.</span>
+            </li>
+            <li>
+              <span class="badge">3</span>
+              <span><b>DPO.</b> Fixes that closed vs fixes that failed become preference pairs — the flow itself is the grader.</span>
+            </li>
+          </ol>
+        </section>
+
+        <section class="measure">
+          <h2 class="section">How we'll measure</h2>
+          <p>Held-out designs: runs to timing closure, WNS/TNS and DRC deltas, and cost per suggestion — vs OpenROAD AutoTuner and a frontier model.</p>
+        </section>
+
+        <footer>Status: scoping. No results claimed yet.</footer>
+      </div>
     </div>
-
-    <section class="plan">
-      <h2 class="section">Plan</h2>
-      <ol class="steps">
-        <li>
-          <span class="badge">1</span>
-          <span><b>Data.</b> Sweep knobs on open OpenROAD designs (SkyWater 130, Nangate45) → log, knobs, outcome. Then Archgen's own runs.</span>
-        </li>
-        <li>
-          <span class="badge">2</span>
-          <span><b>SFT.</b> LoRA on a small open coding model (e.g. Qwen2.5-Coder 7B): log + knobs in, fix out.</span>
-        </li>
-        <li>
-          <span class="badge">3</span>
-          <span><b>DPO.</b> Fixes that closed vs fixes that failed become preference pairs — the flow itself is the grader.</span>
-        </li>
-      </ol>
-    </section>
-
-    <section class="measure">
-      <h2 class="section">How we'll measure</h2>
-      <p>Held-out designs: runs to timing closure, WNS/TNS and DRC deltas, and cost per suggestion — vs OpenROAD AutoTuner and a frontier model.</p>
-    </section>
-
-    <footer>Status: scoping. No results claimed yet.</footer>
   </div>
 </body>
 </html>
