@@ -435,8 +435,8 @@ def _choice_options(current: dict) -> dict:
                  "note": "AGENTS.md rule"},
             ]},
             {"key": "ranking", "title": "Dataset ranking", "options": [
-                {"id": "sie", "label": "SIE Serverless", "sub": "Superlinked", "available": bool(f.superlinked and os.getenv("SIE_API_KEY")),
-                 "note": "flag off" if not (f.superlinked and os.getenv("SIE_API_KEY")) else "live"},
+                {"id": "sie", "label": os.getenv("SIE_RERANK_MODEL", "Qwen/Qwen3-Reranker-0.6B").split("/")[-1], "sub": "Superlinked SIE", "available": bool(f.superlinked and os.getenv("SIE_API_KEY")),
+                 "note": "flag off" if not (f.superlinked and os.getenv("SIE_API_KEY")) else "live · reranker"},
                 {"id": "lexical", "label": "Lexical", "sub": "keyword overlap", "available": True, "note": "local"},
             ]},
             {"key": "memory", "title": "Memory", "options": [
