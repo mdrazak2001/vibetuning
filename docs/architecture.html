@@ -1,107 +1,105 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>tuno · architecture</title>
+<title>tuno · system architecture</title>
 <style>
-  :root { --bg:#f7f7f4; --ink:#14161a; --mute:#6b7280; --line:#d9dbe0; --accent:#3b5bdb; --ok:#2f9e44; --warn:#e8590c; }
-  * { box-sizing:border-box; margin:0; }
-  body { background:var(--bg); font-family: Inter, ui-sans-serif, system-ui, sans-serif; color:var(--ink); }
-  .slide { width:1600px; height:900px; padding:44px 56px; display:flex; flex-direction:column; gap:22px;
-    background-image: radial-gradient(#d4d6db 1px, transparent 1px); background-size: 22px 22px; }
-  header { display:flex; align-items:baseline; justify-content:space-between; }
-  h1 { font-size:46px; font-weight:700; letter-spacing:-1px; }
-  h1 span { color:var(--accent); }
-  .sub { font-size:19px; color:var(--mute); margin-top:6px; }
-  .lane { background:#fff; border:1px solid var(--line); border-radius:22px; padding:18px 22px 22px; position:relative; }
-  .lane h2 { font-size:14px; letter-spacing:2px; text-transform:uppercase; color:var(--mute); margin-bottom:14px; font-weight:600; }
-  .row { display:flex; align-items:stretch; gap:0; }
-  .node { flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px; padding:12px 8px;
-    border:1.5px solid var(--line); border-radius:16px; background:#fff; min-width:0; }
-  .node.hot { border-color:var(--accent); box-shadow:0 0 0 4px rgba(59,91,219,.08); }
-  .node img, .node .glyph { width:46px; height:46px; border-radius:12px; object-fit:contain; background:#f1f2f4; padding:6px; }
-  .node .glyph { display:flex; align-items:center; justify-content:center; font-size:26px; }
-  .node b { font-size:16px; }
-  .node small { font-size:12.5px; color:var(--mute); line-height:1.3; }
-  .arrow { width:34px; flex:none; display:flex; align-items:center; justify-content:center; color:var(--accent); font-size:24px; font-weight:700; }
-  .pill { display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:#e7f5ea; color:var(--ok); }
-  .pill.soon { background:#f1f2f4; color:var(--mute); }
-  .bottom { display:grid; grid-template-columns: 1.15fr 1fr; gap:22px; }
-  .loop { display:flex; align-items:center; gap:16px; }
-  .loop .big { font-size:40px; }
-  .loop p { font-size:16px; line-height:1.45; }
-  .loop b { color:var(--warn); }
-  .stats { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
-  .stat { border:1px solid var(--line); border-radius:14px; padding:12px 14px; }
-  .stat .v { font-size:26px; font-weight:700; }
-  .stat .v.g { color:var(--ok); }
-  .stat .k { font-size:12.5px; color:var(--mute); margin-top:2px; }
-  .back { position:absolute; right:22px; top:16px; font-size:13px; color:var(--warn); font-weight:600; }
+  body { margin:0; background:#fbfbf9; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+  svg text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
 </style>
 </head>
 <body>
-<div class="slide">
-  <header>
-    <div>
-      <h1>tu<span>no</span> · your autonomous training agent</h1>
-      <div class="sub">Most AI tasks no longer need a frontier model. Describe the behaviour → tuno plans, buys, and runs the fine-tune.</div>
-    </div>
-  </header>
-
-  <section class="lane">
-    <h2>① Plan: research → quote</h2>
-    <div class="back">↺ lessons from every run feed back into memory</div>
-    <div class="row">
-      <div class="node"><div class="glyph">💬</div><b>Goal</b><small>"catch whispered English"</small></div>
-      <div class="arrow">→</div>
-      <div class="node hot"><img src="../assets/logos/cognee.png" alt="Cognee" /><b>Cognee</b><small>cross-context memory<br/>recalls past overruns</small></div>
-      <div class="arrow">→</div>
-      <div class="node"><img src="../assets/logos/context.png" alt="context.dev" /><b>context.dev</b><small>web search<br/>for datasets</small></div>
-      <div class="arrow">→</div>
-      <div class="node"><img src="../assets/logos/superlinked.png" alt="Superlinked" /><b>Superlinked</b><small>Qwen3 reranker<br/>scores candidates</small></div>
-      <div class="arrow">→</div>
-      <div class="node"><div class="glyph">⚖️</div><b>Licence gate</b><small>keeps Expresso (CC BY-NC)<br/>rejects unlicensed ASMR</small></div>
-      <div class="arrow">→</div>
-      <div class="node"><img src="../assets/logos/airbyte.png" alt="Airbyte" /><b>Airbyte</b><small>HF manifest → DuckDB<br/>1,139 rows</small></div>
-      <div class="arrow">→</div>
-      <div class="node hot"><img src="../assets/logos/jarvislabs.png" alt="JarvisLabs" /><b>Quote</b><small>live L4 price ×<br/>memory correction</small></div>
-    </div>
-  </section>
-
-  <section class="lane">
-    <h2>② Execute: approve → live GPU job</h2>
-    <div class="row">
-      <div class="node"><div class="glyph">✅</div><b>Approve</b><small>you sign off<br/>on cost cap</small></div>
-      <div class="arrow">→</div>
-      <div class="node hot"><img src="../assets/logos/boat.png" alt="Boat" /><b>Boat</b><small>control plane<br/>runs the relay</small></div>
-      <div class="arrow">→</div>
-      <div class="node hot"><img src="../assets/logos/jarvislabs.png" alt="JarvisLabs" /><b>JarvisLabs L4</b><small>warm resume · LoRA SFT<br/>auto-pause in finally</small></div>
-      <div class="arrow">→</div>
-      <div class="node"><img src="../assets/logos/airbyte.png" alt="Airbyte" /><b>Airbyte</b><small>syncs GPU<br/>metrics log</small></div>
-      <div class="arrow">→</div>
-      <div class="node"><img src="../assets/logos/singlestore.png" alt="SingleStore" /><b>Audit store</b><small>SQLite today<br/><span class="pill soon">SingleStore-ready</span></small></div>
-      <div class="arrow">→</div>
-      <div class="node"><img src="../assets/logos/amplitude.png" alt="Amplitude" /><b>Amplitude</b><small>live_train_step<br/>live_epoch_eval</small></div>
-      <div class="arrow">→</div>
-      <div class="node"><div class="glyph">📈</div><b>Jobs view</b><small>loss + WER charts<br/>job history</small></div>
-    </div>
-  </section>
-
-  <div class="bottom">
-    <section class="lane loop">
-      <div class="big">🧠</div>
-      <p><strong>Self-improving loop.</strong> First run cold-started a GPU: predicted ₹8.26, paid ₹15.20, so it was <b>1.84× over</b>.
-        Cognee stores the lesson, and now tuno reuses warm GPUs and corrects its quotes. M3 came in at ₹5.24 against a ₹9.9 quote.</p>
-    </section>
-    <section class="lane">
-      <h2>③ Result: live run today</h2>
-      <div class="stats">
-        <div class="stat"><div class="v g">7.83% → 6.95%</div><div class="k">word error rate, whispered speech</div></div>
-        <div class="stat"><div class="v">$0.05</div><div class="k">GPU cost · 6 min on L4</div></div>
-        <div class="stat"><div class="v">0</div><div class="k">GPUs left running (auto-pause)</div></div>
-      </div>
-    </section>
-  </div>
-</div>
+<svg id="d" width="1600" height="900" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3b5bdb" />
+    </marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2f9e44" />
+    </marker>
+    <pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#dcdde1" /></pattern>
+  </defs>
+  <rect width="1600" height="900" fill="url(#dots)" />
+  <text x="40" y="56" font-size="34" font-weight="700" fill="#14161a">tuno · system architecture</text>
+  <text x="40" y="84" font-size="16" fill="#6b7280">blue = plan / control path · green = live training telemetry · dashed = trust boundary</text>
+  <g id="zones"></g>
+  <g id="edges"></g>
+  <g id="nodes"></g>
+</svg>
+<script>
+const L = '../assets/logos/';
+const zones = [
+  {x:270, y:110, w:810, h:740, t:'Boat sandbox · vibetuner  (CPU control plane, secrets live here)', c:'#3b5bdb'},
+  {x:1130, y:560, w:430, h:290, t:'JarvisLabs cloud  (rented GPU)', c:'#2f9e44'},
+  {x:1130, y:110, w:430, h:430, t:'External APIs', c:'#868e96'},
+];
+const N = {
+  user:   {x:40,  y:380, w:190, h:120, t:'Browser', s:['tuno mission control','web/index.html'], i:'💻'},
+  api:    {x:300, y:150, w:330, h:110, t:'FastAPI · server.py :7861', s:['SSE /api/run · /api/approve','/api/live · /api/jobs · /api/dataset'], i:'⚡'},
+  agent:  {x:300, y:300, w:330, h:190, t:'Agent pipeline · agent/*', s:['1 parse goal','2 recall memory  3 search','4 rerank  5 licence gate','6 ingest  7 price  8 quote'], i:'🧭'},
+  relay:  {x:300, y:560, w:330, h:120, t:'Live relay · live_run.py', s:['warm-resume only · caps 20 min / ₹40','polls jl run logs every 15s','pause GPU in finally'], i:'🛰️'},
+  ui2:    {x:300, y:720, w:330, h:100, t:'Jobs + receipts', s:['logs/live/jobs/*.json','loss & WER charts, history'], i:'📈'},
+  cognee: {x:690, y:150, w:360, h:100, t:'Cognee', s:['cross-context memory','lessons from past runs (1.84×)'], img:'cognee.png'},
+  jl:     {x:690, y:285, w:360, h:100, t:'jl CLI', s:['JarvisLabs API + SSH','resume · upload · run · pause'], img:'jarvislabs.png'},
+  ab:     {x:690, y:420, w:360, h:110, t:'Airbyte (PyAirbyte OSS)', s:['source-file → DuckDB cache','HF manifest · GPU job logs'], img:'airbyte.png'},
+  store:  {x:690, y:570, w:360, h:110, t:'Audit store', s:['runs · events · training_rows','SQLite today · SingleStore-ready'], img:'singlestore.png'},
+  boat:   {x:690, y:720, w:360, h:100, t:'Boat', s:['persistent sandbox','public URL · no GPU on box'], img:'boat.png'},
+  hf:     {x:1160, y:150, w:370, h:80, t:'Hugging Face', s:['ylacombe/expresso · CC BY-NC'], img:'huggingface.png'},
+  ctx:    {x:1160, y:245, w:370, h:80, t:'context.dev', s:['web search for datasets'], img:'context.png'},
+  sie:    {x:1160, y:340, w:370, h:80, t:'Superlinked SIE', s:['Qwen3-Reranker-0.6B scoring'], img:'superlinked.png'},
+  amp:    {x:1160, y:435, w:370, h:80, t:'Amplitude', s:['HTTP v2 · live_train_step / epoch_eval'], img:'amplitude.png'},
+  gpu:    {x:1160, y:600, w:370, h:220, t:'L4 GPU · train_m3.py', s:['whisper-small + LoRA r=8','Seq2SeqTrainer · 3 epochs','logs loss / 10 steps, WER / epoch','best checkpoint kept','WER 7.83% → 6.95% · $0.05'], img:'jarvislabs.png'},
+};
+const E = [
+  ['user','api','SSE stream','r','l','a'],
+  ['api','agent','','b','t','a'],
+  ['agent','cognee','recall','r','l','a'],
+  ['agent','jl','live L4 price','r','l','a'],
+  ['agent','ab','ingest','r','l','a'],
+  ['agent','ctx','search','t','l','a', [[465,280],[1100,280],[1100,285]]],
+  ['agent','sie','rerank','r','l','a', [[660,330],[660,272],[1110,272],[1110,380]]],
+  ['hf','ab','manifest','l','r','a', [[1090,190],[1090,460]]],
+  ['api','relay','dispatch','l','l','a', [[285,205],[285,620]]],
+  ['relay','jl','resume · run','r','b','a', [[870,600],[870,385]]],
+  ['jl','gpu','SSH','r','l','a', [[1110,335],[1110,700]]],
+  ['gpu','relay','jl run logs / 15s','l','r','g', [[1120,760],[660,760],[660,650]]],
+  ['relay','store','points','r','l','g'],
+  ['relay','amp','events','r','l','g', [[1095,610],[1095,475]]],
+  ['ab','store','rows','b','t','g'],
+  ['relay','ui2','job record','b','t','g'],
+  ['store','api','reads','t','r','a', [[1065,600],[1065,205]]],
+];
+const svg = document.getElementById('d'), NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs, parent, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; (parent||svg).appendChild(e); return e; };
+const zg = document.getElementById('zones'), eg = document.getElementById('edges'), ng = document.getElementById('nodes');
+for (const z of zones) {
+  el('rect', {x:z.x, y:z.y, width:z.w, height:z.h, rx:20, fill:'#ffffff', 'fill-opacity':0.6, stroke:z.c, 'stroke-width':1.6, 'stroke-dasharray':'7 6'}, zg);
+  el('text', {x:z.x+16, y:z.y+24, 'font-size':13, 'font-weight':600, fill:z.c, 'letter-spacing':0.5}, zg, z.t.toUpperCase());
+}
+const anchor = (n, side) => ({l:[n.x, n.y+n.h/2], r:[n.x+n.w, n.y+n.h/2], t:[n.x+n.w/2, n.y], b:[n.x+n.w/2, n.y+n.h]})[side];
+for (const [f, t, label, sf, st, kind, via] of E) {
+  const a = anchor(N[f], sf), b = anchor(N[t], st);
+  const pts = [a, ...(via||[]), b];
+  const col = kind === 'g' ? '#2f9e44' : '#3b5bdb';
+  el('polyline', {points: pts.map(p=>p.join(',')).join(' '), fill:'none', stroke:col, 'stroke-width':1.8, 'marker-end':`url(#${kind})`, 'stroke-linejoin':'round', opacity:0.85}, eg);
+  if (label) {
+    let best = [pts[0], pts[1]], len = 0;
+    for (let i = 0; i < pts.length-1; i++) { const d = Math.hypot(pts[i+1][0]-pts[i][0], pts[i+1][1]-pts[i][1]); if (d > len) { len = d; best = [pts[i], pts[i+1]]; } }
+    const mx = (best[0][0]+best[1][0])/2, my = (best[0][1]+best[1][1])/2;
+    const w = label.length*6.6+14;
+    el('rect', {x:mx-w/2, y:my-10, width:w, height:20, rx:10, fill:'#fff', stroke:col, 'stroke-width':1}, eg);
+    el('text', {x:mx, y:my+4, 'font-size':11.5, 'text-anchor':'middle', fill:col, 'font-weight':600}, eg, label);
+  }
+}
+for (const k in N) {
+  const n = N[k];
+  el('rect', {x:n.x, y:n.y, width:n.w, height:n.h, rx:14, fill:'#ffffff', stroke:'#cfd2d8', 'stroke-width':1.4}, ng);
+  if (n.img) el('image', {href:L+n.img, x:n.x+12, y:n.y+12, width:34, height:34}, ng);
+  else el('text', {x:n.x+14, y:n.y+38, 'font-size':26}, ng, n.i);
+  el('text', {x:n.x+56, y:n.y+28, 'font-size':16, 'font-weight':700, fill:'#14161a'}, ng, n.t);
+  n.s.forEach((s, i) => el('text', {x:n.x+56, y:n.y+50+i*19, 'font-size':13, fill:'#5c6370'}, ng, s));
+}
+</script>
 </body>
 </html>
+
