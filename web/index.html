@@ -438,7 +438,7 @@ $('#reset').onclick = () => location.reload();
 
 /* ---------------- phases ---------------- */
 const PHASES = [
-  {id:'work', label:'Research'}, {id:'choices', label:'Stack'}, {id:'quote', label:'Quote'}, {id:'receipt', label:'Receipt'},
+  {id:'work', label:'Research'}, {id:'choices', label:'Stack'}, {id:'quote', label:'Quote'}, {id:'receipt', label:'Dispatch'},
 ];
 function buildStepper() {
   const s = $('#stepper'); s.innerHTML = '';
@@ -783,9 +783,9 @@ function renderQuote() {
       <div class="flex justify-between mono text-[11px] text-mute mt-1"><span title="₹0">$0.00</span><span>range ${money(lo)}–${money(hi)}</span><span>${money(cap)}</span></div></div>
     <p class="text-xs text-mute mt-4 border-l-2 border-accent/60 pl-2">memory: ${esc(inrText(lessonNote.replace(/\*\*/g, '').replace(/^#+\s*/, '')))}</p>
     <div class="acts mt-6 flex items-center gap-3">
-      <button class="approve press btn-primary glow px-6 h-11">APPROVE</button>
+      <button class="approve press btn-primary glow px-6 h-11">APPROVE & DISPATCH</button>
       <button class="reject press btn-ghost px-4 h-11 text-sm">Reject</button>
-      <span class="text-xs text-mute ml-auto text-right">replays the real M3 run from the audit log<br/>no GPU is created</span>
+      <span class="text-xs text-mute ml-auto text-right">resumes the paused JarvisLabs L4 · real spend<br/>20 min / ${money(40)} hard cap · auto-pause</span>
     </div>
   </div>`);
   wrap.append(el);
@@ -800,7 +800,7 @@ function reject() {
   phaseDone('quote', `<b>Quote</b> <span class="text-mute">· ${money(RUN.quote.predicted_inr)} · rejected — nothing purchased</span>`, '✗');
   stepState('quote', 'done', 'rejected');
   const wrap = phaseSection('receipt');
-  const el = h(`<div class="panel p-6 enter text-center"><div class="text-sm text-mute mb-4">No GPU, no replay, no audit rows written for approval.</div></div>`);
+  const el = h(`<div class="panel p-6 enter text-center"><div class="text-sm text-mute mb-4">No GPU dispatched, nothing spent.</div></div>`);
   const b = h('<button class="press btn-primary px-5 h-11">Start a new mission</button>'); b.onclick = () => location.reload();
   el.append(b); wrap.append(el);
 }
@@ -808,72 +808,38 @@ function reject() {
 /* ---------------- receipt ---------------- */
 async function approve(card) {
   const acts = card.querySelector('.acts');
-  acts.innerHTML = '<span class="ring"></span><span class="text-sm text-mute">approving · replaying M3…</span>';
-  card.append(h(`<div class="stamp absolute right-6 top-6 mono text-2xl font-bold px-3 py-1 border-4 rounded-md bg-panel" style="color:${tone('ok')};border-color:${tone('ok')};animation-delay:80ms">PURCHASED<div class="text-[10px] font-semibold text-center">REPLAY</div></div>`));
-  await sleep(reduced ? 0 : 900);
-  phaseDone('quote', `<b>Quote</b> <span class="text-mute">· ${money(RUN.quote.predicted_inr)} predicted · approved</span> <span class="mono text-[10px] px-1.5 py-0.5 rounded border" style="color:${tone('warn')};border-color:${tone('warn')}">REPLAY</span>`);
-  stepState('quote', 'done', `${usd(RUN.quote.predicted_inr)} approved`);
-  stepState('receipt', 'active', 'printing');
-  const wrap = phaseSection('receipt');
-  const r = h(`<div class="panel p-6 enter relative overflow-hidden"><div class="flex justify-between items-center mb-4"><div class="font-semibold">Receipt</div>
-    <span class="mono text-[11px] px-2 py-0.5 rounded border font-semibold" style="color:${tone('warn')};border-color:${tone('warn')};background:rgb(var(--warn) / .08)">REPLAY · r_fc806936</span></div>
-    <ol class="lines mono text-xs space-y-1"></ol><div class="sum"></div><div class="cta"></div></div>`);
-  wrap.append(r); r.scrollIntoView({behavior: reduced ? 'auto' : 'smooth', block: 'start'});
-  const lines = r.querySelector('.lines');
-  let i = 0, sessionRows = 0;
-  const sessionLine = h('<div class="mono text-[11px] text-mute mt-2"></div>');
-  await sse('/api/approve', {run_id: RUN.streamId, goal: RUN.goal}, async (ev, d) => {
-    if (ev === 'receipt' && SESSION_EVENTS.has(d.event) && (d.ts || '') > M3_DONE_TS) {
-      sessionRows++;
-      sessionLine.textContent = `+ ${sessionRows} research/quote rows from today's planning sessions (audit log)`;
-      if (!sessionLine.isConnected) lines.after(sessionLine);
-    } else if (ev === 'receipt') {
-      const p = d.payload || {};
-      const extra = d.cost_inr != null ? usd(d.cost_inr) : d.wer != null ? `WER ${(d.wer*100).toFixed(2)}%` : inrText(p.gpu || p.dataset || p.n || '');
-      lines.append(h(`<li class="enter flex gap-3" style="animation-delay:${(i++%3)*60}ms"><span class="text-mute">${esc((d.ts||'').replace('T',' ').slice(0,19))}</span>
-        <span class="flex-1">${esc(d.event)}</span><span class="text-mute">${esc(extra)}</span></li>`));
-    } else if (ev === 'receipt_done') {
-      const zero = d.running_gpus === 0;
-      const s = h(`<div class="grid grid-cols-3 gap-3 mt-5">
-        <div class="rounded-lg border border-line p-3"><div class="text-[11px] text-mute">M3 cost · predicted → actual</div><div class="mono text-xl c" title="₹${esc(String(d.predicted_inr))} → ₹${esc(String(d.actual_inr))}">${esc(usd(d.predicted_inr))}</div></div>
-        <div class="rounded-lg border border-line p-3"><div class="text-[11px] text-mute">held-out WER</div><div class="mono text-xl w" style="color:${tone('ok')}">7.83%</div></div>
-        <div class="rounded-lg border p-3" style="border-color:${zero ? tone('ok') : 'rgb(var(--line))'}"><div class="text-[11px] text-mute">${esc(d.running_source)}</div>
-          <div class="mono text-lg flex items-center gap-2">${d.running_gpus ?? '?'} GPUs running ${zero ? `<span class="pulse-dot on" style="background:${tone('ok')};color:${tone('ok')}"></span>` : ''}</div></div>
-      </div>`);
-      r.querySelector('.sum').append(s);
-      await sleep(200);
-      countTo(s.querySelector('.c'), d.predicted_inr, d.actual_inr, {ms: 900, fmt: v => usd(v)});
-      countTo(s.querySelector('.w'), d.wer_before*100, d.wer_after*100, {ms: 900, fmt: v => v.toFixed(2) + '%'});
-      const cta = h(`<div class="mt-5">
-        <div class="flex flex-wrap gap-2">
-          <button type="button" class="dispatch-job press btn-primary px-4 h-10 text-sm">Dispatch as live job →</button>
-          <button type="button" class="press btn-ghost px-4 h-10 text-sm" data-go="audit">Open audit trail</button>
-        </div>
-        <div class="dispatch-err hidden text-xs text-bad mt-2"></div>
-      </div>`);
-      cta.querySelector('[data-go]').onclick = () => show('audit');
-      cta.querySelector('.dispatch-job').onclick = async () => {
-        const err = cta.querySelector('.dispatch-err');
-        err.classList.add('hidden'); err.textContent = '';
-        try {
-          const res = await fetch('/api/live/dispatch', {method: 'POST'});
-          let d = {};
-          try { d = await res.json(); } catch {}
-          if (res.ok || res.status === 409) { viewingJobId = null; show('jobs'); loadLive(); return; }
-          err.textContent = d.error || res.statusText || 'dispatch failed';
-          err.classList.remove('hidden');
-        } catch (e) {
-          err.textContent = e.message || 'dispatch failed';
-          err.classList.remove('hidden');
-        }
-      };
-      r.querySelector('.cta').append(cta);
-      stepState('receipt', 'done', `${usd(5.24)} · ${d.running_gpus ?? '?'} running`);
-      loadSpend(); loadStatus();
-    } else if (ev === 'error') {
-      lines.append(h(`<li class="text-bad">⚠ ${esc(d.error)}</li>`));
+  acts.innerHTML = `<span class="ring"></span><span class="text-sm text-mute">dispatching live job…</span>`;
+  const stamp = h(`<div class="stamp absolute right-6 top-6 mono text-2xl font-bold px-3 py-1 border-4 rounded-md bg-panel" style="color:${tone('ok')};border-color:${tone('ok')};animation-delay:80ms">APPROVED<div class="text-[10px] font-semibold text-center">LIVE</div></div>`);
+  card.append(stamp);
+  stepState('receipt', 'active', 'dispatching');
+  try {
+    const res = await fetch('/api/live/dispatch', {method: 'POST'});
+    let d = {};
+    try { d = await res.json(); } catch {}
+    if (res.ok || res.status === 409) {
+      phaseDone('quote', `<b>Quote</b> <span class="text-mute">· ${money(RUN.quote.predicted_inr)} predicted · approved · live job dispatched</span>`);
+      stepState('quote', 'done', `${usd(RUN.quote.predicted_inr)} approved`);
+      stepState('receipt', 'done', res.status === 409 ? 'already running' : 'live on L4');
+      await sleep(reduced ? 0 : 600);
+      viewingJobId = null;
+      show('jobs');
+      loadLive();
+      loadSpend();
+      loadStatus();
+    } else {
+      stamp.remove();
+      const msg = d.error || res.statusText || 'dispatch failed';
+      acts.innerHTML = `<span class="text-bad text-xs">${esc(msg)}</span><button class="press btn-primary px-4 h-10 text-sm">Retry</button>`;
+      acts.querySelector('button').onclick = () => approve(card);
+      stepState('receipt', 'active', 'dispatch failed');
     }
-  });
+  } catch (e) {
+    stamp.remove();
+    const msg = e.message || 'dispatch failed';
+    acts.innerHTML = `<span class="text-bad text-xs">${esc(msg)}</span><button class="press btn-primary px-4 h-10 text-sm">Retry</button>`;
+    acts.querySelector('button').onclick = () => approve(card);
+    stepState('receipt', 'active', 'dispatch failed');
+  }
 }
 
 /* ---------------- live training ---------------- */
