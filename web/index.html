@@ -24,9 +24,9 @@ tailwind.config = { theme: { extend: {
 </script>
 <style>
 :root,[data-theme=light]{--bg:250 250 249;--panel:255 255 255;--ink:16 17 20;--mute:107 114 128;--line:231 229 228;--soft:245 245 244;
-  --accent:194 65 12;--onaccent:255 255 255;--ok:22 163 74;--warn:217 119 6;--bad:220 38 38;--dot:16 17 20;--dot-a:.06}
+  --accent:59 130 246;--onaccent:255 255 255;--ok:22 163 74;--warn:217 119 6;--bad:220 38 38;--dot:16 17 20;--dot-a:.06}
 [data-theme=dark]{--bg:11 12 14;--panel:20 22 26;--ink:232 234 237;--mute:138 144 153;--line:38 42 49;--soft:27 30 35;
-  --accent:255 178 36;--onaccent:11 12 14;--ok:52 211 153;--warn:251 191 36;--bad:248 113 113;--dot:232 234 237;--dot-a:.05}
+  --accent:96 165 250;--onaccent:11 12 14;--ok:52 211 153;--warn:251 191 36;--bad:248 113 113;--dot:232 234 237;--dot-a:.05}
 :root{--e:cubic-bezier(0.22,1,0.36,1);--t1:150ms;--t2:250ms;--t3:400ms;--rail:200px}
 html.rail-collapsed{--rail:56px}
 html,body{background:rgb(var(--bg));color:rgb(var(--ink))}
@@ -127,6 +127,7 @@ html.rail-collapsed #rail{align-items:center}
   <button class="rail press" data-view="audit" data-tip="Audit"><span>☰</span><span class="rail-label">Audit</span></button>
   <div class="h-px bg-line my-2 mx-2"></div>
   <button class="rail press" data-drawer="mem" data-tip="Memory"><span>✦</span><span class="rail-label">Memory</span></button>
+  <button class="rail press" data-drawer="pilot" data-tip="Pilot"><span>◆</span><span class="rail-label">Pilot</span></button>
   <button id="railToggle" class="rail press mt-auto" type="button" data-tip="Collapse sidebar" aria-label="Collapse sidebar"><span id="railToggleIcon">‹</span><span class="rail-label" id="railToggleLabel">Collapse</span></button>
 </nav>
 
@@ -1163,7 +1164,7 @@ $('#drawerClose').onclick = () => toggleDrawer(null);
 function toggleDrawer(k) {
   if (k === openDrawer || !k) { $('#drawer').classList.remove('open'); openDrawer = null; return; }
   openDrawer = k; $('#drawer').classList.add('open');
-  ({mem: drawMem, int: drawInt, aud: drawAud})[k]();
+  ({mem: drawMem, pilot: drawPilot, int: drawInt, aud: drawAud})[k]();
 }
 
 function drawMem() {
@@ -1205,6 +1206,21 @@ function drawMem() {
     } catch (e) { a.innerHTML = `<div class="text-bad text-xs">${esc(e)}</div>`; }
   };
   $('#mgo').onclick = ask; $('#mq').onkeydown = e => { if (e.key === 'Enter') ask(); };
+}
+
+function drawPilot() {
+  $('#drawerTitle').textContent = 'Pilot · Archgen Labs'; const b = $('#drawerBody');
+  b.innerHTML = `<div class="flex items-center gap-3">
+    <img src="/assets/logos/archgen.png" alt="Archgen Labs" class="w-10 h-10 rounded-lg">
+    <div class="flex-1 min-w-0">
+      <div class="font-semibold">Archgen Labs</div>
+      <div class="text-[11px] mono text-mute">YC F26 · AI for 3D chip physical design</div>
+    </div>
+    <span class="shrink-0 text-[11px] mono rounded-full px-2 py-0.5" style="color:rgb(var(--accent));border:1px solid rgb(var(--accent));background:rgb(var(--accent) / .08)">pilot · scoping</span>
+  </div>
+  <img src="/assets/logos/archgen-pilot.jpg" alt="With the Archgen Labs founder" class="w-full rounded-xl border border-line mt-4">
+  <p class="text-sm mt-3"><b>What they do.</b> Archgen builds Newton, an AI agent that reads timing and DRC reports, patches the physical-design flow and reruns — for single dies and 3D-stacked chips.</p>
+  <p class="text-sm mt-3"><b>What we're piloting.</b> tuno fine-tunes a small, private model on flow logs → knob fixes (OpenROAD first, then Archgen runs), so Newton's fix loop runs cheaper, faster and on-prem.</p>`;
 }
 
 async function drawInt() {
